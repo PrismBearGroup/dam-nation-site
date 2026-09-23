@@ -18,6 +18,9 @@ h1{font-size:40px;margin:0;color:#e2b57a;line-height:1.1}
 .btns{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0 8px}
 .btn{display:inline-block;padding:12px 22px;border-radius:10px;font-weight:800;text-decoration:none;color:#2a1707;background:linear-gradient(180deg,#ffd071,#f0a92e 50%,#b8741a);box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .shot{width:100%;border-radius:12px;margin-top:28px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+/* 16:9 trailer. youtube-nocookie so a visitor who only reads the page is not tracked by it. */
+.video{position:relative;padding-top:56.25%;margin-top:28px;border-radius:12px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.6);background:#0d1512}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 h2{color:#e2b57a;margin-top:36px}
 ul{padding-left:22px}
 footer{margin-top:48px;color:#98a892;font-size:14px;border-top:1px solid #2a3a30;padding-top:16px}
@@ -27,7 +30,9 @@ footer a{color:#8ad0ef}
 <h1>Dam Clan</h1><p class="tag">Lead a beaver clan. Build dams, hold back the river, outlast storms and rivals.</p>
 <div class="btns"><a class="btn" href="play/">Play the free demo in your browser</a><a class="btn" href="https://play.google.com/store/apps/details?id=com.prismbeargroup.damclan&amp;referrer=utm_source%3Ddamclan_site%26utm_medium%3Downed%26utm_campaign%3Dlaunch">Get it on Google Play</a></div>
 </div></div>
-<img class="shot" src="shot.jpg" alt="Dam Clan gameplay: beavers building a log dam across a misty river">
+<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/kwGUkCGszos?rel=0" title="Dam Clan gameplay trailer"
+  loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
 <h2>What it is</h2>
 <p>A colony-building game about beavers. Chomp trees, dig mud, haul stone and raise a dam across the water. Then hold it: the current never stops wearing at your wall, and the pond only fills if it stands.</p>
 <ul>
