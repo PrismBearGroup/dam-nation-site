@@ -677,7 +677,7 @@ const BASE_STORAGE=150, DAY_MS=900, SAVE_KEY='dam-nation-save-v1', SAVE_BAK='dam
 //  the app build swaps in AdMob + RevenueCat without touching game code.
 // =====================================================================
 const PREMIUM_KEY='dam-nation-premium';
-const VERSION='0.33.1';
+const VERSION='0.33.2';
 const AD_AFTER_DAMS=1, BUY_AFTER_DAMS=2;   // rivers dammed before the first ad, and before the offer
 const REVIEW_AFTER_DAMS=2, REVIEW_KEY='damclan-reviewed';
 function maybeAskReview(){ // Play's own sheet, once per install, on the dammed screen of the second river - before the ad, never after it
@@ -1813,15 +1813,14 @@ function renderJobbar(){
 // and it clusters on the FIRST tap - so the opening ate the instruction it had just given
 // (round nine, Priya, proven deterministically). Listening on the parent survives the rebuild.
 // `pointerup` rather than `click` for the same reason: click needs both ends on one live element.
-function delegateJobs(el){ if(!el||el.__deleg)return; el.__deleg=true;
-  el.addEventListener('pointerup',e=>{
-    const b=e.target&&e.target.closest?e.target.closest('button'):null; if(!b||b.disabled)return;
-    if(b.dataset.chip!=null){ jobSel=b.dataset.chip; dirty=true; renderUI(); return; }
-    if(b.dataset.job!=null){ setJob(b.dataset.job,+b.dataset.d); renderUI(); }
-  });
-}
-// every container the game re-serialises: the phone job bar, the desktop panel and the popups
-['#jobbar','#panel','#popup'].forEach(sel=>delegateJobs($(sel)));
+// ONE listener, at the document, for every job control anywhere. It was three - #jobbar, #panel and
+// #popup - but #jobbar sits INSIDE #panel, so a press on a stepper bubbled through both and moved
+// two beavers for one tap. Caught by tools/tap-check.js the first time it ran: build went 0 -> 2.
+if(document.addEventListener)document.addEventListener('pointerup',e=>{   // the headless harnesses stub document
+  const b=e.target&&e.target.closest?e.target.closest('button'):null; if(!b||b.disabled)return;
+  if(b.dataset.chip!=null){ jobSel=b.dataset.chip; dirty=true; renderUI(); return; }
+  if(b.dataset.job!=null){ setJob(b.dataset.job,+b.dataset.d); renderUI(); }
+});
 const POPUP_TITLE={build:'Build the dam',research:'Research',clan:'Clan'};
 let popupAt=0;
 function openPopup(tab){ popupTab=tab; popupAt=performance.now(); dirty=true; renderUI(); }   // opening a menu is not a first ACTION; firstAction fires on setJob and addSection
@@ -2328,9 +2327,16 @@ function keepClear(x,y,G){
       if(ty<=y+3)continue;                            // only a tree NEARER than the spot can cover it
       const sc=depthScale(ty,G)*treeSlots[i].s*G.ss, w=52*sc;
       if(ty-y>130*sc)continue;                        // far enough down-screen that its canopy is past
-      if(Math.abs(x-tx)<w){ const want=x<tx?tx-w:tx+w; const got=hold(want);
-        // if moving that way would cross the water, try the other side instead
-        x = got===want ? want : hold(x<tx?tx+w:tx-w); moved=true; }
+      const dt2=x-tx;
+      if(Math.abs(dt2)<w){ const dir=dt2<0?-1:1;
+        // Just clear of the canopy, keeping the gap between neighbours. If neither side has room -
+        // a portrait plate leaves about 95 px of right bank - LEAVE IT ALONE. Shoving everyone to
+        // the edge stacked three raiders on one pixel, which is worse than being partly behind a
+        // tree (Justin, on a phone, 0.33.1).
+        const a1=x+dir*(w-Math.abs(dt2)), a2=x-dir*(w+Math.abs(dt2));
+        const ok1=hold(a1)===a1, ok2=hold(a2)===a2;
+        if(ok1){ x=a1; moved=true; } else if(ok2){ x=a2; moved=true; }
+      }
     }
     // Lodges too. A lodge is drawn ~1.6 times as wide as it is tall and sits on the bank exactly
     // where visitors arrive: the bear measured 2% of its box on the glass because a lodge 229 px
@@ -2338,8 +2344,12 @@ function keepClear(x,y,G){
     for(let i=0;i<Math.min(2,lodgeN(G));i++){
       const [lx,ly,ls]=lodgePos(i,G); const lh=150*ls, lw=lh*0.8;
       if(ly<=y+3||ly-y>lh)continue;
-      if(Math.abs(x-lx)<lw){ const want=x<lx?lx-lw:lx+lw; const got=hold(want);
-        x = got===want ? want : hold(x<lx?lx+lw:lx-lw); moved=true; }
+      const dl2=x-lx;
+      if(Math.abs(dl2)<lw){ const dir=dl2<0?-1:1;
+        const a1=x+dir*(lw-Math.abs(dl2)), a2=x-dir*(lw+Math.abs(dl2));
+        const ok1=hold(a1)===a1, ok2=hold(a2)===a2;
+        if(ok1){ x=a1; moved=true; } else if(ok2){ x=a2; moved=true; }
+      }
     }
     x=hold(x);
     if(!moved)break;
@@ -2783,8 +2793,22 @@ function render(t){
   // visitors: sized with the same depth ramp as the beavers, placed in the near half of the band where a phone shows the most bank
   const vs=y=>G.ss*depthScale(y,G);
   if(active('raid')||g.pending){ const y=G.plate?hz+(damY-hz)*0.72:damY+22; const [,r]=chan(y); const k0=vs(y);
+    // They ADVANCE. Three rivals stood on the bank playing a walk cycle without moving an inch, which
+    // read as moonwalking on the spot (Justin, on a phone). There is no attack or carry art for them -
+    // only walk and idle sheets - so the honest version with what exists is to close the distance:
+    // on the warning day they wait at the treeline, and once the raid lands they come on toward the
+    // wall, smoothly, over the raid's own wall-clock length. The walk cycle then matches the motion.
+    const ev=g.events.find(e=>e.type==='raid');
+    if(ev&&ev.at==null)ev.at=t;
+    const span=Math.max(1,(ev?ev.days:1))*(DAY_MS/1000);
+    const adv=(ev&&!g.pending)?clamp((t-ev.at)/span,0,1):0;
+    const moving=adv>0&&adv<1;
     { const bx=G.plate?r+(W-r)*0.1-20*k0+(g.pending?30*k0:0):r+20+(g.pending?70:0); _vq('banner',bx,y+8,70*k0,t,{face:1,mode:'idle',bob:5}); }
-    for(let k=0;k<3;k++){ const x=G.plate?r+(W-r)*0.1+(k*26+(g.pending?30:0))*k0:r+46+k*26+(g.pending?70:0), yy=y+k*5; _vq(rivalSprite(),x,yy,(g.river>=5?92:82)*k0,t,{face:-1,mode:g.pending?'idle':'walk',bob:k}); } }
+    for(let k=0;k<3;k++){
+      const x0=G.plate?r+(W-r)*0.1+(k*26+(g.pending?30:0))*k0:r+46+k*26+(g.pending?70:0);
+      const x1=r+(10+k*15)*k0;                      // shoulder to shoulder at the water's edge
+      const x=x0+(x1-x0)*adv, yy=y+k*5;
+      _vq(rivalSprite(),x,yy,(g.river>=5?92:82)*k0,t,{face:-1,mode:moving?'walk':'idle',bob:k,dist:moving?adv*span*90:0}); } }
   { if(active('otters')){ const y=damY+(H-damY)*0.12; const [l]=chan(y); for(let k=0;k<2;k++)_vq('otter',l+10+k*40*vs(y),y+k*8,54*vs(y),t,{face:1,mode:'walk',bob:k+4}); }
     // a letterboxed scene puts the far bank under the dam strip, so the bear comes down it
     if(active('bear')){ const y=hz+(damY-hz)*(H<560?0.80:0.55); const [l]=chan(y); _vq('bear',Math.max(24,l-(l*0.4)),y,108*vs(y),t,{face:1,mode:'work',job:'wood',bob:6}); }
