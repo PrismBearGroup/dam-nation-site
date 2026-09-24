@@ -377,7 +377,7 @@ const LS={ _s:null,
   lock(){ this._s=this._p(); return this._s; },
   getItem(k){ return this._p().getItem(k); }, setItem(k,v){ this._p().setItem(k,v); }, removeItem(k){ this._p().removeItem(k); } };
 // every key the game owns, so a CrazyGames build can copy them into the Data module on first run there
-const LS_KEYS=['dam-nation-save-v1','dam-nation-save-v1-backup','dam-nation-premium','damclan-mute','damclan-music','damclan-reviewed','damclan-best','damclan-ach','damclan-cam','damclan-gauge','damclan-noflash'];
+const LS_KEYS=['dam-nation-save-v1','dam-nation-save-v1-backup','dam-nation-premium','damclan-mute','damclan-music','damclan-reviewed','damclan-best','damclan-ach','damclan-cam','damclan-gauge','damclan-noflash','damclan-toasts'];
 
 // CrazyGames puts a mute switch in its own chrome and requires the game to follow it. It takes
 // priority over the in-game Sound toggle and must never overwrite the player's own choice.
@@ -677,7 +677,7 @@ const BASE_STORAGE=150, DAY_MS=900, SAVE_KEY='dam-nation-save-v1', SAVE_BAK='dam
 //  the app build swaps in AdMob + RevenueCat without touching game code.
 // =====================================================================
 const PREMIUM_KEY='dam-nation-premium';
-const VERSION='0.33.0';
+const VERSION='0.33.1';
 const AD_AFTER_DAMS=1, BUY_AFTER_DAMS=2;   // rivers dammed before the first ad, and before the offer
 const REVIEW_AFTER_DAMS=2, REVIEW_KEY='damclan-reviewed';
 function maybeAskReview(){ // Play's own sheet, once per install, on the dammed screen of the second river - before the ad, never after it
@@ -1009,7 +1009,9 @@ function damStrength(){
 }
 function log(text,kind){ g.log.push({day:g.day,text,kind:kind||'info'}); if(g.log.length>80)g.log.shift(); if(activeTab!=='log')unread++; dirty=true; if(kind&&kind!=='info'&&typeof toast==='function')toast(text,kind); }
 // short-lived notices over the scene (newcomers auto-joining a job, etc.); they share the banner stack
-const toasts=[]; function toast(text,kind){ const now=(typeof performance!=='undefined'?performance.now():0); toasts.push({text,kind:kind||'good',until:now+(kind==='dire'?7000:5000)}); while(toasts.length>2)toasts.shift(); /* two at most: three stacked up to the dam on a phone */ dirty=true; if(typeof setTimeout!=='undefined')setTimeout(()=>{ dirty=true; },5100); }
+let toastsOn=false; try{ toastsOn=LS.getItem('damclan-toasts')==='1'; }catch(e){}
+function setToasts(v){ toastsOn=!!v; try{ LS.setItem('damclan-toasts',v?'1':'0'); }catch(e){} if(!toastsOn)toasts.length=0; dirty=true; }
+const toasts=[]; function toast(text,kind){ if(!toastsOn&&kind!=='dire')return; const now=(typeof performance!=='undefined'?performance.now():0); toasts.push({text,kind:kind||'good',until:now+(kind==='dire'?7000:5000)}); while(toasts.length>2)toasts.shift(); /* two at most: three stacked up to the dam on a phone */ dirty=true; if(typeof setTimeout!=='undefined')setTimeout(()=>{ dirty=true; },5100); }
 function joined(who,job){ const jn=JOBS.find(j=>j.id===job).name; log(who+' starts on '+jn.toLowerCase()+' (change it '+WHERE.beavers()+').','good'); }
 function canAfford(c){return Object.entries(c).every(([k,v])=>g.res[k]>=v)}
 function pay(c){for(const [k,v] of Object.entries(c))g.res[k]-=v}
@@ -1330,8 +1332,10 @@ function sciCost(r){ return Math.round(r.cost*Math.pow(1.1,researchCount())); }
 const TIER_NEED=[0,0,2,4]; const tierOpen=t=>g.damsBuilt>=TIER_NEED[t||1];
 function canResearch(r){ return !has(r.id)&&tierOpen(r.tier)&&!(r.req&&!has(r.req))&&g.res.science>=sciCost(r)&&canAfford(r.mat||{}); }
 function buy(id){ const r=RESEARCH.find(x=>x.id===id); if(!canResearch(r)){Sfx.play('buzz');return} g.res.science-=sciCost(r); pay(r.mat||{}); g.research[id]=true; track('research',{id}); if(SECTION_TYPES[bestWall()].strength>SECTION_TYPES[g.nextType].strength)g.nextType=bestWall(); log('Researched '+r.name+'.','good'); Sfx.play('coin'); }
+let retarget=false;   // set when the world moves under the actors; render re-homes them next frame
 function nextRiver(){
   track('move_upstream',{to:g.river+1,day:g.day});
+  retarget=true;
   g.riverStart=g.day;
   winAt=0; clearWon();
   g.damsBuilt++; g.river++; g.sections=[]; g.sel=-1; g.floodWarn=0; g.dryDays=0; g.pondStood=false; g.complete=false; g.hold=0; g.forest=1; g.chop=0; g.pendingWeather=null; g.cooldown=8; g.events=[]; g.pending=null; lostSections=[];
@@ -1913,7 +1917,7 @@ function settingsHtml(){
   const chk=(on,fn,label)=>'<label class="opt"><input type="checkbox" onchange="'+fn+'" '+(on?'checked':'')+'> '+label+'</label>';
   return '<div class="box"><h1>Settings</h1>'+
     '<h2>Sound</h2>'+chk(!Sfx.muted,'Sfx.setMuted(!this.checked)','Sound')+chk(!Sfx.musicOff,'Sfx.setMusicOn(this.checked)','Music')+
-    '<h2>Display</h2>'+chk(noFlash,'setNoFlash(this.checked)','Reduce lightning flashes')+chk(camStop()==='dam','toggleCam()','Camera close on the dam')+
+    '<h2>Display</h2>'+chk(toastsOn,'setToasts(this.checked)','Pop-up messages over the river')+chk(noFlash,'setNoFlash(this.checked)','Reduce lightning flashes')+chk(camStop()==='dam','toggleCam()','Camera close on the dam')+
     (DEMO?'':PORTAL?'<h2>Ads</h2><p class="note">'+(Ads.hasAds()?'An ad plays between rivers; the boosts are ads you choose.':'This version has no ads.')+(PLAY_URL?' The Android version is <a href="'+PLAY_URL+'" target="_blank" rel="noopener" style="color:#8a5c31">on Google Play</a>.':'')+'</p>':'<h2>Ads</h2><p class="note">'+(Ads.isPremium()?'Off. Thank you for supporting the clan.':'An ad plays between rivers; the boosts are ads you choose. '+(Ads.canBuy()?'':'Removing the between-river ads is not on sale yet.'))+'</p>'+
       '<p class="row">'+(Ads.isPremium()?'':(Ads.canBuy()?'<button onclick="Ads.buyPremium()">Remove ads · '+Ads.priceText()+'</button>':'')+'<button class="small" onclick="Ads.restore()">Restore purchase</button>')+(Ads.canEditConsent()?'<button class="small" onclick="Ads.editConsent()">Ad privacy choices</button>':'')+'</p>')+
     '<h2>Game</h2><p class="row"><button class="small" onclick="showSettings=false;g.seenHelp=false;dirty=true">How to play</button><button class="small" onclick="ask(&quot;This colony and its save are gone for good.&quot;,function(){newGame();g.seenHelp=true;showSettings=false;dirty=true;},&quot;Start a new clan&quot;)">New clan</button></p>'+
@@ -2306,7 +2310,13 @@ function dropPointFor(job,i,G,a){ // where gatherers carry their haul: gatherers
 // own tree is at his own row and never pushes him.
 function keepClear(x,y,G){
   const m=26*G.ss;
-  x=clamp(x,m,W-m);
+  // Which side of the water the spot started on. Stepping out from under a tree must never walk a
+  // worker into the river - two builders arrived on river 2 standing mid-channel, hammering at
+  // nothing, because this only knew about canopies and canvas edges (Justin, on a phone, 0.33.0).
+  const [wl,wr]=G.chan(y), bank=x<=wl?-1:x>=wr?1:0;   // G.chan, not chan: the bare name is not in scope here and threw on every call, silently, because the frame loop swallows render exceptions
+  const holdSide=v=>bank<0?Math.min(v,wl-4):bank>0?Math.max(v,wr+4):v;
+  const hold=v=>clamp(holdSide(clamp(v,m,W-m)),m,W-m);   // keep it dry AND on the glass; clamping last was letting a narrow bank push a worker off the left edge
+  x=hold(x);
   // Three passes. One was not enough: stepping out from under one canopy can put a worker straight
   // under the next, which is how a researcher measured 63% covered at four sizes after the first
   // version of this shipped (round nine). Re-checking until nothing moves settles it.
@@ -2318,7 +2328,9 @@ function keepClear(x,y,G){
       if(ty<=y+3)continue;                            // only a tree NEARER than the spot can cover it
       const sc=depthScale(ty,G)*treeSlots[i].s*G.ss, w=52*sc;
       if(ty-y>130*sc)continue;                        // far enough down-screen that its canopy is past
-      if(Math.abs(x-tx)<w){ x = x<tx ? tx-w : tx+w; moved=true; }
+      if(Math.abs(x-tx)<w){ const want=x<tx?tx-w:tx+w; const got=hold(want);
+        // if moving that way would cross the water, try the other side instead
+        x = got===want ? want : hold(x<tx?tx+w:tx-w); moved=true; }
     }
     // Lodges too. A lodge is drawn ~1.6 times as wide as it is tall and sits on the bank exactly
     // where visitors arrive: the bear measured 2% of its box on the glass because a lodge 229 px
@@ -2326,12 +2338,13 @@ function keepClear(x,y,G){
     for(let i=0;i<Math.min(2,lodgeN(G));i++){
       const [lx,ly,ls]=lodgePos(i,G); const lh=150*ls, lw=lh*0.8;
       if(ly<=y+3||ly-y>lh)continue;
-      if(Math.abs(x-lx)<lw){ x = x<lx ? lx-lw : lx+lw; moved=true; }
+      if(Math.abs(x-lx)<lw){ const want=x<lx?lx-lw:lx+lw; const got=hold(want);
+        x = got===want ? want : hold(x<lx?lx+lw:lx-lw); moved=true; }
     }
-    x=clamp(x,m,W-m);
+    x=hold(x);
     if(!moved)break;
   }
-  return [x,y];
+  return [hold(x),y];
 }
 function targetFor(job,i,G,variant){
   const t=targetForRaw(job,i,G,variant);
@@ -2353,7 +2366,12 @@ function targetForRaw(job,i,G,variant){
     case 'stone':{const y=G.plate?bankY(G,0.3+seed*0.6):damY+30+seed*(H-damY-50); return [Math.min(W-16,bankX(0.53+seed2*0.17,y,G)), y];}
     case 'build':{const [l,r]=chan(damY); const n=Math.max(1,g.sections.length); const k=g.sections.find(s=>s.progress<1); const sec=k||g.sections[i%n]; const u=((sec?sec.pos:0)+0.5)/R.width;
       // a builder stands on the section it is building (feet just below the crest, drawn over the wall face) - but until there is enough of it to stand on, it works from the nearer abutment rather than treading water mid-river
-      if(!sec||sec.progress<0.15||(sec.wrecked&&!sec.paid)){ const left=u<0.5; return [left?l-14*G.ss-seed*10:r+14*G.ss+seed*10, damY-6-seed*8]; }
+      // No wall to stand on yet: wait on the bank. bankX() is dry by construction, where the old
+      // raw offset from chan() sat close enough to the waterline that keepClear could nudge it in -
+      // which is how builders ended up hammering mid-river on a fresh river (Justin, 0.33.0).
+      if(!sec||sec.progress<0.15||(sec.wrecked&&!sec.paid)){
+        const y2=damY-10-seed*10;
+        return [bankX(u<0.5?0.44-seed2*0.06:0.56+seed2*0.06,y2,G), y2]; }
       return [l+(r-l)*u+((i%3)-1)*(r-l)/R.width*0.3, (G.damAt?G.damAt(u):damY)-88*G.ss*0.62-seed*4];}   // feet on the crest, drawn over the wall
     case 'guard':{const y=G.plate?damY-10-seed*12:damY+14; return i%2?[Math.max(16,bankX(0.48-seed*0.1,y,G)),y]:[Math.min(W-16,bankX(0.52+seed*0.1,y,G)),y];}
     case 'research':{ if(G.plate){const y=bankY(G,0.25+seed*0.35); return [Math.min(W-20,bankX(0.51+seed2*0.12,y,G)),y];} const y=H*0.89+seed*H*0.05; return [W*0.10+seed2*W*0.14, y];}
@@ -2367,13 +2385,34 @@ function syncActors(G){
     if(a.job!==b.job){ a.job=b.job; a.variant=0; if(b.job==='idle'){ a.state='toHome'; const [hx,hy]=homeFor(i,G); a.tx=hx;a.ty=hy; } else { a.state='toWork'; [a.tx,a.ty]=targetFor(b.job,i,G,0); } } });
 }
 function moveActor(a,dt,speed){ const dx=a.tx-a.x, dy=a.ty-a.y, d=Math.hypot(dx,dy); if(d<2)return true; const st=Math.min(d,speed*dt); a.x+=dx/d*st; a.y+=dy/d*st; a.dist=(a.dist||0)+st; if(Math.abs(dx)>3)a.face=dx<0?-1:1; return false; }
+// Is there any wall for a builder to actually work on? A fresh river has no sections at all, and
+// builders were still playing the hammering loop at the waterline, swinging at nothing (Justin, on
+// a phone, 0.33.0). They wait instead, and the nudge is already telling the player to buy a section.
+function buildWork(){
+  return g.sections.some(s=>s.progress<1||s.wrecked||s.hp<SECTION_TYPES[s.type].hp*0.999);
+}
+// Jobs whose work spot is supposed to be ON THE BANK. Builders stand on the crest and guards patrol
+// the dam line, so both are legitimately over the channel and are not checked.
+const BANK_JOBS=['forage','wood','research','mud','stone','idle'];
 function updateActor(a,i,dt,G){
   const walk=70+20*((a.y-G.hz)/(H-G.hz)); // px per second, nearer = faster (perspective)
   a.mode='idle';
+  const noWork=a.job==='build'&&!buildWork();
+  // SELF-HEAL. A worker standing in the river, or off the edge of the canvas, is wrong however it
+  // got there - and it has got there three different ways now: a stale target kept from the previous
+  // river, a plate remap that moves actors without re-checking, and keepClear stepping someone out
+  // from under a tree into the water. Rather than chase each cause, notice the bad state and fix it.
+  // A builder with no wall to work on belongs on the bank too - there is no crest to stand on.
+  if(G.plate&&a.state==='work'&&(BANK_JOBS.includes(a.job)||noWork)){
+    const [wl,wr]=G.chan(a.y), m=26*G.ss;
+    if((a.x>wl+2&&a.x<wr-2)||a.x<m-1||a.x>W-m+1){
+      [a.tx,a.ty]=targetFor(a.job,i,G,a.variant); a.x=a.tx; a.y=a.ty;
+    }
+  }
   if(a.state!=='entering'&&a.state!=='home')a.alpha=Math.min(1,a.alpha+dt*2);   // fade in whatever the state: a re-homed actor already standing on its spot skipped toWork and stayed at 3% (0.27.5)
   switch(a.state){
     case 'toWork': a.mode='walk'; if(moveActor(a,dt,walk)){ a.state='work'; a.timer=6+Math.random()*8; } break;
-    case 'work': a.mode='work'; a.timer-=dt;
+    case 'work': a.mode=noWork?'idle':'work'; a.timer-=dt;
       // work-loop foley: at most one chomp/tap per actor every 1.2-1.8 s, and only while the scene is live
       a.sfx=(a.sfx||0)-dt; if(a.sfx<=0){ a.sfx=1.2+Math.random()*0.6; if(a.alpha>0&&!g_paused()){ if(a.job==='wood')Sfx.play('chomp'); else if(a.job==='build')Sfx.play('hammer'); } }
       if(a.timer<=0){
@@ -2781,6 +2820,8 @@ function render(t){
   const dt=Math.min(0.1,Math.max(0,t-lastT)); lastT=t;
   syncActors(G);
   // re-home when the camera stop changes or the plate's geometry does (4:3 <-> portrait); seasons share geometry and only remap
+  if(retarget){ retarget=false;
+    actors.forEach((a,i)=>{ [a.tx,a.ty]=targetFor(a.job,i,G,a.variant); a.x=a.tx; a.y=a.ty; a.alpha=0; a.state=a.job==='idle'?'home':'toWork'; }); }
   if(G.plate&&(!lastPlate||PLATES[lastPlate].edges!==PLATES[G.plate].edges)){ lastPlate=G.plate; lastCam=camStop();
     actors.forEach((a,i)=>{ [a.tx,a.ty]=targetFor(a.job,i,G,a.variant); a.x=a.tx; a.y=a.ty; a.alpha=0; a.state='toWork'; }); }   // fade in where they work; walking in from the lodge sent half the colony swimming
   else if(G.plate&&lastFit&&(lastFit.dx!==G.fit.dx||lastFit.dy!==G.fit.dy||lastFit.dw!==G.fit.dw))remapActors(lastFit,G.fit);
@@ -2858,6 +2899,7 @@ function reloadPrefs(){ try{
     camPref=LS.getItem(CAM_KEY)||camPref;
     const gv=LS.getItem('damclan-gauge'); if(gv)gaugeMini=gv==='mini';
     noFlash=LS.getItem('damclan-noflash')==='1';
+    toastsOn=LS.getItem('damclan-toasts')==='1';
   }catch(e){} }
 if(portalHold)Portal.init().then(()=>{ Portal.migrate(); LS.lock(); if(Portal.ready&&Portal.sdk.data&&!load())newGame(); reloadPrefs(); portalHold=false; Portal.loaded(); if(window.__cgDone)window.__cgDone(); dirty=true; });
 else LS.lock();
