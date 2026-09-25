@@ -48,7 +48,7 @@ header>*{position:relative}
 .grow{flex:1}
 .speed{display:flex;gap:5px;position:absolute;top:10px;right:10px;z-index:3}
 #tabs .toggle{display:none}
-#jobbar,.actions{display:none}
+#jobbar,#actions{display:none}
 /* phone controls: a job bar that is always on screen, and popups for Build / Research / Clan */
 #jobbar{background:var(--wood-face);border-top:2px solid #1a0e05;box-shadow:0 -4px 12px rgba(0,0,0,.45);padding:4px 4px 6px;position:relative;z-index:2}
 #jobbar .chips{display:flex;gap:3px}
@@ -213,7 +213,7 @@ body.asking #panel,body.asking #jobbar,body.asking #actions,body.asking .speed{p
   #main{display:flex;flex-direction:column;position:relative;min-width:0;overflow:hidden}
   #scene{position:relative;flex:1;min-height:0}
   .speed{top:auto;bottom:8px;right:8px;gap:4px}
-  .actions{display:flex;position:absolute;top:6px;right:6px;gap:4px;z-index:3}
+  #actions,.actions{display:flex;position:absolute;top:6px;right:6px;gap:4px;z-index:3}
   #dambar{right:166px}
   #jobbar{display:block}
   .speed button{width:34px;min-height:34px;font-size:12px;opacity:.9}
@@ -677,7 +677,7 @@ const BASE_STORAGE=150, DAY_MS=900, SAVE_KEY='dam-nation-save-v1', SAVE_BAK='dam
 //  the app build swaps in AdMob + RevenueCat without touching game code.
 // =====================================================================
 const PREMIUM_KEY='dam-nation-premium';
-const VERSION='0.33.2';
+const VERSION='0.33.3';
 const AD_AFTER_DAMS=1, BUY_AFTER_DAMS=2;   // rivers dammed before the first ad, and before the offer
 const REVIEW_AFTER_DAMS=2, REVIEW_KEY='damclan-reviewed';
 function maybeAskReview(){ // Play's own sheet, once per install, on the dammed screen of the second river - before the ad, never after it
