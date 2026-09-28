@@ -726,7 +726,7 @@ const BASE_STORAGE=150, DAY_MS=1500, SAVE_KEY='dam-nation-save-v1', SAVE_BAK='da
 //  the app build swaps in AdMob + RevenueCat without touching game code.
 // =====================================================================
 const PREMIUM_KEY='dam-nation-premium';
-const VERSION='0.35.0';
+const VERSION='0.35.1';
 const AD_AFTER_DAMS=1, BUY_AFTER_DAMS=2;   // rivers dammed before the first ad, and before the offer
 const REVIEW_AFTER_DAMS=2, REVIEW_KEY='damclan-reviewed';
 function maybeAskReview(){ // Play's own sheet, once per install, on the dammed screen of the second river - before the ad, never after it
@@ -2367,6 +2367,10 @@ const jobSprite=(job,tier)=>{ const base=JOB_SPRITE[job]||'idle'; if(tier>0&&spr
 const rivalSprite=()=>g.river>=5?'rival3':g.river>=2?'rival2':'rival';
 const DROP_SFX={build:'plop',wood:'logdrop',mud:'mudpat',stone:'stoneset'};
 const WALK_SKIP0=new Set(['bear']);
+// Every sheet is drawn assuming the figure faces RIGHT. These four walk cycles were rendered facing left,
+// so they walked backwards - builders heading right and the river-2+ raiders moonwalked (Justin, 28 Sep,
+// on vc23; the builder sheet has done it since v0.20). tools/sheet-check.js does not see facing.
+const WALK_FACES_LEFT=new Set(['builder','rival2','rival3','otter']);
 const WALK_IN_S=2.5; const walkT0=new WeakMap();
 const CARRY_SPRITE={wood:'carrywood',mud:'carrymud',stone:'carrystone',forage:'carryfood'};
 const CHEER_SPRITE={build:'cheerbuilder',forage:'cheerforager',idle:'cheer'};
@@ -2391,7 +2395,7 @@ function drawSprite(name,x,y,h,t,a){
     ctx.save(); ctx.globalAlpha=alpha;
     if(a.sink){ ctx.beginPath(); ctx.rect(x-h*2,y-h*2,h*4,h*2-h*a.sink); ctx.clip(); }   // afloat: the waterline cuts the body
     else if(!a.noShadow){ ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x,y+1,w*0.4,h*0.08,0,0,Math.PI*2); ctx.fill(); }
-    ctx.translate(x,y); ctx.scale(a.face,1); ctx.drawImage(sh,f*cell,0,cell,cell,-ch/2,-ch+ (ch-h)/2,ch,ch); ctx.restore();
+    ctx.translate(x,y); ctx.scale(a.face*(st==='walk'&&WALK_FACES_LEFT.has(name)?-1:1),1); ctx.drawImage(sh,f*cell,0,cell,cell,-ch/2,-ch+ (ch-h)/2,ch,ch); ctx.restore();
     return true;
   }
   if(a.mode==='walk'){ hop=Math.abs(Math.sin(ph*1.2))*h*0.08; sq=Math.sin(ph*2.4)*0.04; rot=a.face*0.05; }
@@ -2577,6 +2581,12 @@ function targetForRaw(job,i,G,variant){
       // raw offset from chan() sat close enough to the waterline that keepClear could nudge it in -
       // which is how builders ended up hammering mid-river on a fresh river (Justin, 0.33.0).
       if(!sec||sec.progress<0.15||(sec.wrecked&&!sec.paid)){
+        // Justin, 28 Sep (vc23): "some of the build beavers don't build on the dam" - every new section
+        // starts at 0, so the whole crew walked off to the bank each time a gap opened. With finished
+        // wall beside the gap they stand on it, at the edge they are building out from.
+        if(sec){ const nb=g.sections.filter(s=>s!==sec&&s.progress>=0.15&&!s.wrecked&&Math.abs(s.pos-sec.pos)===1);
+          if(nb.length){ const o=nb[i%nb.length], un=(o.pos+0.5+(sec.pos>o.pos?0.3:-0.3))/R.width;
+            return [l+(r-l)*un+((i%3)-1)*(r-l)/R.width*0.12, (G.damAt?G.damAt(un):damY)-88*G.ss*0.62-seed*4]; } }
         const y2=damY-10-seed*10;
         return [bankX(u<0.5?0.44-seed2*0.06:0.56+seed2*0.06,y2,G), y2]; }
       return [l+(r-l)*u+((i%3)-1)*(r-l)/R.width*0.3, (G.damAt?G.damAt(u):damY)-88*G.ss*0.62-seed*4];}   // feet on the crest, drawn over the wall
@@ -3181,7 +3191,8 @@ function render(t){
     // Crossing the river: beavers swim (walk, in winter: the plate paints the river as ice and they
     // were waist-deep in it with wake rings, 38 of 150 samples - Elena, round twelve). Clip the sprite at the waterline and draw a wake, rather than
     // letting it stride across the surface (the tall portrait plates made that unmissable).
-    const [wl,wr]=chan(a.y); const swimming=season()!==3&&a.mode==='walk'&&a.y<damY-6&&a.y>hz+8&&a.x>wl+4&&a.x<wr-4;
+    // builders walk the wall's crest, which is inside the channel above damY: they never swim (Justin, 28 Sep: they turned into swimmers on the dam)
+    const [wl,wr]=chan(a.y); const swimming=a.job!=='build'&&season()!==3&&a.mode==='walk'&&a.y<damY-hh*0.5&&a.y>hz+8&&a.x>wl+4&&a.x<wr-4;
     if(swimming){ const wl=a.y-hh*0.42;
       // 0.35: a real swim stroke (v38 sheet). Round fourteen (Elena): the first cut clipped below the
       // body and drew it at 0.62 of a beaver, so it hovered on the surface at half size. The waterline
