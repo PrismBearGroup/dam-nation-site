@@ -1572,10 +1572,13 @@ function renderUI(){
   } else if(g.complete&&DEMO&&g.damsBuilt>=1){
     ovSet('<div class="box"><h1>That is the demo</h1><p>You dammed <b>'+R.name+'</b> with '+g.beavers+' beavers in <b>'+(g.day-(g.riverStart||0))+' days</b>.</p>'+
       '<p>The full game carries this clan up six hand-built rivers and then endless ones: 28 discoveries, expeditions, seasons, rival clans, floods and a forest you can chop flat if you are careless.</p>'+
-      (PLAY_URL?'<div class="btns"><button class="primary" id="btn-store">Get the full game on Google Play</button></div>':'<p class="note">Coming soon to Google Play.</p>')+
+      '<div class="btns">'+(PLAY_URL?'<button class="primary" id="btn-store">Get it on Google Play</button>':'')+
+      '<button class="primary" id="btn-cg">Play the full game on CrazyGames</button></div>'+
       '<p class="note">Thanks for playing. <a href="/" style="color:#8a5c31">Back to the site</a></p></div>');
     ov.hidden=false;
     if(PLAY_URL&&$('#btn-store'))$('#btn-store').onclick=()=>{location.href=PLAY_URL};
+    // The full web game lives on CrazyGames (approved 30 Sep 2026); the demo is the site's only copy.
+    if($('#btn-cg'))$('#btn-cg').onclick=()=>{location.href='https://www.crazygames.com/game/dam-clan-rfp?utm_source=damclan_site&utm_medium=demo_end&utm_campaign=crazygames_launch'};
   } else if(g.complete){
     // Hold the card back and let them WATCH the pond they just made. It used to appear on the same
     // frame the river was dammed, so the payoff of the entire product was visible for zero frames
