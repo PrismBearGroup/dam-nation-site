@@ -135,6 +135,9 @@ body.raidwarn #banners{z-index:5}   /* the raid warning sat under the Build popu
 details.note summary{cursor:pointer;color:var(--oak-l);font-weight:700;margin:4px 0} details.note p{margin:4px 0}
 .damstat .net.bad{color:#ff8d84;font-weight:800} .damstat .net.warn{color:#ffc266;font-weight:700}
 .damstat.alert{box-shadow:inset 0 0 0 2px rgba(226,87,79,.8),inset 0 -3px 6px rgba(0,0,0,.35);animation:pulse 1.4s ease-in-out infinite}
+/* the Add button the 15 s hint opened: a soft glow so a hands-off player sees the one thing to press */
+.primary.callout{animation:callout 1.4s ease-in-out infinite}
+@keyframes callout{50%{box-shadow:0 0 0 4px rgba(255,236,190,.85),0 0 18px 6px rgba(255,214,140,.55)}}
 @keyframes pulse{50%{box-shadow:inset 0 0 0 2px rgba(226,87,79,.25),inset 0 -3px 6px rgba(0,0,0,.35)}}
 @media (prefers-reduced-motion:reduce){.damstat.alert{animation:none}}
 #tabs{display:flex;gap:6px;padding:8px 8px 0;background:rgba(0,0,0,.28);border-bottom:2px solid #1a0e05;box-shadow:inset 0 -3px 6px rgba(0,0,0,.4)}
@@ -201,6 +204,7 @@ body.asking #panel,body.asking #jobbar,body.asking #actions,body.asking .speed{p
 .overlay .box{background:linear-gradient(180deg,#f3e4c2,#e6d3a8);color:#3a2410;border:2px solid #8a5c31;border-radius:6px;padding:0 26px;max-width:min(480px,100%);width:100%;max-height:100%;overflow-y:auto;overflow-x:hidden;box-shadow:0 12px 40px rgba(0,0,0,.7),inset 0 0 40px rgba(120,80,30,.25);position:relative}
 .overlay .box::before,.overlay .box::after{content:'';display:block;position:sticky;z-index:1;height:12px;margin-left:-32px;margin-right:-32px;background:linear-gradient(180deg,var(--oak-l),var(--oak-d));border-radius:6px;box-shadow:0 3px 6px rgba(0,0,0,.5)}
 .overlay .box::before{top:0;margin:0 -32px 16px}.overlay .box::after{bottom:0;margin:10px -32px 0}
+.overlay .box::before,.overlay .box::after{pointer-events:none}
 .overlay h1{font-size:32px;margin-bottom:6px;color:#6b3e14;text-shadow:0 1px 0 rgba(255,255,255,.5)}
 .overlay p{margin:8px 0;line-height:1.5}
 .overlay ul{margin:6px 0 12px 18px;padding:0;line-height:1.55}
@@ -260,7 +264,7 @@ body.asking #panel,body.asking #jobbar,body.asking #actions,body.asking .speed{p
   #banners{bottom:6px;max-width:46%} .banner{font-size:11px;padding:3px 7px}
   .actions{top:4px;right:4px} .actions button.small{width:40px;min-width:40px;min-height:40px;font-size:10px}
   .speed{bottom:5px;right:5px;gap:3px} .speed button{width:28px;min-width:28px;min-height:28px;font-size:11px}
-  #jobbar{padding:2px 3px 3px} #tutorial{padding:3px 7px;font-size:11px}
+  #jobbar{padding:2px 3px 3px} #tutorial{padding:3px 7px;font-size:12.5px;line-height:1.25}
   /* Overlays in a letterbox. Settings is 730 px of content in a ~300 px box, and 425 px of it was
      below an unmarked fold - New clan, How to play and the whole About block invisible (round nine,
      Priya). Tighten it, and put a visible fade at the foot so the fold announces itself. */
@@ -726,7 +730,7 @@ const BASE_STORAGE=150, DAY_MS=1500, SAVE_KEY='dam-nation-save-v1', SAVE_BAK='da
 //  the app build swaps in AdMob + RevenueCat without touching game code.
 // =====================================================================
 const PREMIUM_KEY='dam-nation-premium';
-const VERSION='0.35.1';
+const VERSION='0.36.0';
 const AD_AFTER_DAMS=1, BUY_AFTER_DAMS=2;   // rivers dammed before the first ad, and before the offer
 const REVIEW_AFTER_DAMS=2, REVIEW_KEY='damclan-reviewed';
 function maybeAskReview(){ // Play's own sheet, once per install, on the dammed screen of the second river - before the ad, never after it
@@ -819,9 +823,9 @@ const Portal={
   // 'adsDisabledBasicLaunch' is the portal telling us ads are off for this stage of the launch
   _adErr(e){ const c=String((e&&(e.code||e.error))||e||''); if(/adsDisabled|Disabled/i.test(c))this.adsOk=false; },
   gameplay(on){ if(!this.ready)return; try{ on?this.sdk.game.gameplayStart():this.sdk.game.gameplayStop(); }catch(e){} },
-  interstitial(){ return new Promise(res=>{ if(!this.ready)return res(); let done=false; const end=()=>{ if(!done){done=true;res();} };
+  interstitial(){ return new Promise(res=>{ if(!this.ready)return res(); let done=false; this.inAd=true; if(this.playing){ this.playing=false; this.gameplay(false); } const end=()=>{ if(!done){done=true;this.inAd=false;res();} };
     try{ this.sdk.ad.requestAd('midgame',{adFinished:end,adError:e=>{ this._adErr(e); end(); },adStarted:()=>{ this.adsOk=true; }}); }catch(e){ end(); } setTimeout(end,45000); }); },
-  rewarded(){ return new Promise(res=>{ if(!this.ready)return res(false); let done=false; const end=ok=>{ if(!done){done=true;res(ok);} };
+  rewarded(){ return new Promise(res=>{ if(!this.ready)return res(false); let done=false; this.inAd=true; if(this.playing){ this.playing=false; this.gameplay(false); } const end=ok=>{ if(!done){done=true;this.inAd=false;res(ok);} };
     try{ this.sdk.ad.requestAd('rewarded',{adFinished:()=>end(true),adError:e=>{ this._adErr(e); end(false); },adStarted:()=>{ this.adsOk=true; }}); }catch(e){ end(false); } setTimeout(()=>end(false),90000); }); },
 };
 const BOOST_DAYS=8, BOOST_GAP=12;   // in the save (g.boostDays, g.lastBoostDay) so a restart mid-boost keeps it
@@ -864,7 +868,9 @@ function newGame(){
     // which then ran at four days a second (Dave, round ten). The remembered pace applies from the
     // next river, and to every loaded clan.
     day:0, river:0, riverStart:0, speed:1, damsBuilt:0, complete:false,
-    res:{food:26,wood:30,mud:0,stone:0,science:0},   // 40 fed the clan longer than river 1 lasts, so the food loop never bit
+    res:{food:26,wood:50,mud:0,stone:0,science:0},   // 40 food fed the clan longer than river 1 lasts, so the food loop never bit.
+    // Wood 50 (+20 refunded for the pre-built section = 70): every gap on river 1 is affordable at once. At 30 the
+    // fastest tapper's third Add was refused and the dam sat at 3/4 from 14 s to 60 s (round fifteen, Marcus).
     beavers:6, lodges:2, morale:70, starving:0,
     // Every beaver starts ON A JOB, but deliberately NOT on Build. Idle beavers are drawn inside the
     // lodge, so the old 1-forager start meant a colony sim whose first frame had ONE visible beaver
@@ -897,6 +903,7 @@ function newGame(){
   if(!g.river){ g.res.wood+=SECTION_TYPES.stick.cost.wood||0;
     pushSection({type:'stick',progress:0.35,hp:0,wrecked:false,paid:true}); }
   winAt=0; clearWon();
+  try{ hintClock=0; hintOpened=false; hintGlow=false; }catch(e){}   // a new clan gets the hint and the one auto-open again (declared further down)
   toasts.length=0; // a dead colony's messages must not carry into the next clan
   try{ tutChip=false; raidSeen=false; }catch(e){}   // a new clan gets the Build chip and the raid focus again
   log('Your clan settles beside '+river().name+'. Block it, and move upstream to bigger water.','good');
@@ -1047,6 +1054,9 @@ const flowNow=()=>river().flow*FLOW_SEASON[season()]*(active('storm')?1.6:1);
 // in which the player presses nothing (Marcus and the benchmark critic, round ten). The day stays at
 // 1500 ms because that is what makes events readable; river 1 gets fewer, fuller hold days instead.
 const holdNeed=()=>g.river===0?7:10+3*g.river;
+// The first dam: weather still batters the wall (the player sees it tested) but never costs pond water. A storm
+// in the hold pushed an engaged player's first win from ~27 s to ~51 s - onto CrazyGames' one-minute line (0.36 gate).
+const firstDam=()=>g.river===0&&!g.damsBuilt;
 const holdRate=()=>g.river===0?1:clamp(damStrength()/river().req,0.3,1);   // a leaky dam fills the pond slower - except on the first river, where the wall is still climbing to strength and that dominated the hold (cutting the count alone saved 6.6 s)
 // On river 1 the pond starts at 60%: the finished wall then spent ~9 more days climbing to 95% by
 // repair before the hold could even begin, which was most of the empty stretch (round ten).
@@ -1055,6 +1065,10 @@ const damReady=()=>g.sections.length===river().width&&g.sections.every(s=>s.prog
 function mults(){
   const s=season(), w=has('winter')?0.5:1;
   let food=1,wood=1,build=1,research=1,erosion=1;
+  // The first river builds twice as fast. After the last gap was filled a perfect player waited 20-40 s with
+  // nothing to do, and the win landed at ~45 s - on CrazyGames' one-minute line (round fifteen, all six).
+  // Here rather than in simDay so the dam strip, the nudge and the bots all read the same rate.
+  if(g.river===0&&!g.damsBuilt)build*=2;
   if(has('teeth'))wood*=1.5; if(has('trails'))food*=1.5; if(has('academy'))research*=1.5;
   if(s===0)food*=1.1;
   if(s===2){food*=1.2;wood*=1.2}
@@ -1162,7 +1176,7 @@ function simDay(){
   let stormDrain=0;
   for(const e of g.events){
     e.days--;
-    if(e.type==='storm'){ damageDam(flowNow()*1.5*(1+0.1*g.river)*(has('channels')?0.5:1)*(has('wardens')?0.7:1),'the storm'); if(!hasSpillway())stormDrain+=has('channels')?1:2; }
+    if(e.type==='storm'){ damageDam(flowNow()*1.5*(1+0.1*g.river)*(has('channels')?0.5:1)*(has('wardens')?0.7:1),'the storm'); if(!hasSpillway()&&!firstDam())stormDrain+=has('channels')?1:2; }
   }
   g.events=g.events.filter(e=>e.days>0);
   if(g.pending){ g.pending.days--; if(g.pending.days<=0){resolveRaid();g.pending=null} }
@@ -1185,7 +1199,11 @@ function simDay(){
       g.hold+=holdRate();
       if(g.hold<=1)log('The wall spans '+R.name+'. Hold it for '+holdNeed()+' days while the pond fills. Fish gather: foraging +'+(has('weirs')?60:30)+'%.','good');
     }
-    if(g.hold>=holdNeed()){ g.complete=true; g.morale=clamp(g.morale+20,0,100); recordBest(); if(season()===3)st().winterDam=1; track('river_dammed',{river:g.river,days:g.day-(g.riverStart||0),beavers:g.beavers}); try{ if(window.Native&&window.Native.setProp)window.Native.setProp('rivers_dammed',String(g.damsBuilt+1)); }catch(e){} log(R.name+' is dammed! The pond is full behind your wall.','good'); Sfx.play('win'); }
+    if(g.hold>=holdNeed()){ g.complete=true; g.morale=clamp(g.morale+20,0,100); recordBest(); if(season()===3)st().winterDam=1; track('river_dammed',{river:g.river,days:g.day-(g.riverStart||0),beavers:g.beavers}); try{ if(window.Native&&window.Native.setProp)window.Native.setProp('rivers_dammed',String(g.damsBuilt+1)); }catch(e){} log(R.name+' is dammed! The pond is full behind your wall.','good'); Sfx.play('win');
+      // River 1 is ~17 days now (round fifteen sped it up), and one researcher banks ~1 science a day, so river 2
+      // opened on "Stick Walls can never hold this river" and a 15-20 s wait for the 30 science Mud Packing
+      // needs - inside CrazyGames' first minute for an engaged player (Priya). The first dam pays for it.
+      if(!g.damsBuilt&&g.river===0&&!g.firstDamBonus){ g.firstDamBonus=1; g.res.science+=20; log('Building the dam taught the clan how water moves: +20 science.','good'); } }
   } else if(g.hold>0){ g.hold=0; log('The dam weakened and the pond is draining. Repair it to start filling again.','warn'); }
   tickPond();
   if(g.river>=4&&!has('channels')&&!g.floodWarn&&g.sections.length>=R.width)g.floodWarn=g.day;
@@ -1243,6 +1261,9 @@ function startEvent(type,now){
       // took 5 -> 4 beavers and 74 -> 25 wood (the benchmark critic) - and three days' warning, not
       // two: a reader who needed 2 s landed the guard on the same tick as the raid (Priya, round twelve).
       if(g.river===0&&g.sections.length<river().width)break;
+      // ...and no raid at all before the first dam is won: one at ~41 s took a beaver and laid its red banner
+      // over the first win card, inside CrazyGames' one-minute window (round fifteen, Sofia).
+      if(!g.damsBuilt)break;
       // Three days everywhere: on rivers 2-3 two days (3 s) still cost a reading player three beavers (Priya, round thirteen).
       if(!g.pending){ const d=has('scouts')?(has('alarm')?6:4):3; g.pending={type:'raid',days:d}; log(has('scouts')?'Scouts report a rival clan '+d+' days out. Post guards!':'A rival clan is on the far bank. They will come for the stores in '+d+' days.','warn'); Sfx.play('warnchime'); }
       else resolveRaid();   // a second raid while one is already at the bank lands at once
@@ -1256,7 +1277,7 @@ function startEvent(type,now){
         lostSections=takeSections(lost,'mid');
         g.morale=clamp(g.morale-20,0,100); g.hold=0; salvage();
         log('FLASH FLOOD! The river punches through mid-channel and '+lost+' sections are swept away.','dire');
-      } else { damageDam(dmg,'a flash flood'); if(g.hold>0)g.hold=Math.max(0,g.hold*(has('channels')?0.75:0.5)); log('A flash flood slams the dam'+(g.hold>0?' and the pond loses water':'')+'.','bad'); }
+      } else { damageDam(dmg,'a flash flood'); if(g.hold>0&&!firstDam())g.hold=Math.max(0,g.hold*(has('channels')?0.75:0.5)); log('A flash flood slams the dam'+(g.hold>0&&!firstDam()?' and the pond loses water':'')+'.','bad'); }
       g.events.push({type:'flood',days:1,name:'Flash flood'});
       break;}
     case 'drought': g.events.push({type:'drought',days:Math.max(2,6+r-(has('wardens')?1:0)),name:'Drought'}); log('Drought. Plants wither and foraging suffers for '+Math.max(2,6+r-(has('wardens')?1:0))+' days.','warn'); break;
@@ -1312,11 +1333,14 @@ function resolveRaid(){
     log('Your guards repelled a rival raid and seized '+loot+' wood from the fleeing thieves.','good');
   } else {
     const ratio=1-defense/strength;
-    const share=r===0?0.15:Math.min(0.6,0.3+0.04*r); const w=Math.floor(g.res.wood*share*ratio), f=Math.floor(g.res.food*share*ratio);
+    // The FIRST raid a clan ever loses teaches rather than punishes, whichever river it lands on. It was keyed on
+    // river 1, which 0.36 no longer raids, so a player's first raid became the full river-2 one (round sixteen, Marcus).
+    const first=!g.raidsLost; g.raidsLost=(g.raidsLost||0)+1;
+    const share=first?0.15:Math.min(0.6,0.3+0.04*r); const w=Math.floor(g.res.wood*share*ratio), f=Math.floor(g.res.food*share*ratio);
     g.res.wood-=w; g.res.food-=f; g.morale=clamp(g.morale-10,0,100); rev.stole=1;   // the render sends them off with the bundle (rivalhaul) for the last part of the raid
     // The first river's raid teaches rather than punishes: at most one beaver taken. A hands-off
     // player went from 7 beavers to 4 on day 33 (the benchmark critic, round eleven).
-    const taken=Math.min(Math.max(0,g.beavers-4),Math.ceil(ratio*3),r===0?1:9); if(taken>0)removeBeavers(taken,true);
+    const taken=Math.min(Math.max(0,g.beavers-4),Math.ceil(ratio*3),first?1:9); if(taken>0)removeBeavers(taken,true);
     // 'dire', so it shows even with pop-ups off (the default): a loss nothing reported was the other
     // half of Priya's round-eleven finding.
     log('Rival beavers raided the camp'+(defense>0?' despite your guards':'')+': stole '+w+' wood and '+f+' food'+(taken?' and dragged off '+taken+' beaver'+(taken>1?'s':''):'')+'.',taken?'dire':'bad');
@@ -1372,9 +1396,13 @@ function addSection(){
   const t=SECTION_TYPES[g.nextType]; if(g.sections.length>=river().width||!canAfford(t.cost)){Sfx.play('buzz');return}
   if(wallTooWeak(g.nextType)){ Sfx.play('buzz'); toast('A '+t.name+' here would leave the dam short of '+river().req+'.','warn'); return; }
   pay(t.cost); pushSection({type:g.nextType,progress:0,hp:0,wrecked:false}); firstAction('section'); dirty=true;
+  try{ hintClock=0; }catch(e){}
   // The last slot filled: nothing left to do in this popup, and at 907x510 it covers ~85% of the
   // scene - the first win played out behind it (Sofia, round ten). Close it so the dam is in view.
   if(g.sections.length>=river().width&&popupTab==='build')closePopup();
+  // First river: close after ANY Add. Left open it covered 58% of the scene at 907x510 and all of it on a
+  // phone, so for ~30 s the player saw the wall they had just bought only as a progress bar (round fifteen, Elena).
+  else if(popupTab==='build'&&g.river===0&&!g.damsBuilt)closePopup();
 }
 // every finished section weaker than the selected wall type
 function rebuildTargets(){ const t=SECTION_TYPES[g.nextType]; if(t.spill)return []; return g.sections.map((x,i)=>x.progress>=1&&!SECTION_TYPES[x.type].spill&&SECTION_TYPES[x.type].strength<t.strength?i:-1).filter(i=>i>=0); }
@@ -1618,13 +1646,13 @@ function renderUI(){
 // asserts ok() for whichever step is live; setJob's donor fallback is what makes it true.
 const TUT=[
   {text:()=>isDrawer()?'Put a beaver on <b>Trees</b> in the bar below: tap the chip, then +.':'Put a beaver on <b>Chomp trees</b>: open the Beavers tab and press + next to it.', done:()=>g.jobs.wood>=1, ok:()=>canAddTo('wood'), tab:'beavers'},
-  {text:()=>isDrawer()?'Add a <b>Stick Wall</b>: tap the dam outline on the river, then Add Stick Wall (20 wood).':'Add a <b>Stick Wall</b>: open the Build tab and press Add Stick Wall (20 wood).', done:()=>g.sections.length>=1, ok:()=>canAfford(SECTION_TYPES[g.nextType].cost), tab:'build'},
+  {text:()=>'Add a <b>Stick Wall</b>: '+tapWord()+' the river (20 wood).', done:()=>g.sections.length>=1, ok:()=>canAfford(SECTION_TYPES[g.nextType].cost), tab:'build'},
   {text:()=>'Put a beaver on <b>Build & repair</b> so the wall gets built and mended.', done:()=>g.jobs.build>=1, ok:()=>canAddTo('build'), tab:'beavers'},
   // Names the tap. "Fill every section" did not say how, and a player who did step one sat at 10/40 for
   // forty days (Sofia, round eleven).
   // Once every gap is filled the tap is done: the text said "tap the +" for 12-21 s after there was no +
   // left, and Priya's reader clicked the dam 17 times for nothing (round thirteen).
-  {text:()=>g.sections.length>=river().width?'Every gap is filled. The builders finish the wall, then it holds while the pond fills.':(isDrawer()?'Fill the gaps: tap the <b>+</b> on the river, then Add Stick Wall.':'Fill the gaps: click the <b>+</b> on the river, then Add Stick Wall.')+' Then hold the dam while the pond fills.', done:()=>g.sections.length>=river().width&&g.sections.every(x=>x.progress>=1), ok:()=>true, tab:null},
+  {text:()=>g.sections.length>=river().width?'Every gap is filled. The builders finish the wall, then it holds while the pond fills.':(popupTab==='build'?'Press <b>Add Stick Wall</b> to fill the gaps':'Fill the gaps: '+tapWord()+' the <b>river</b> to add a Stick Wall')+(isDrawer()?'':' (or Add Stick Wall in the Build tab)')+'. Then hold the dam while the pond fills.', done:()=>g.sections.length>=river().width&&g.sections.every(x=>x.progress>=1), ok:()=>true, tab:null},
 ];
 // Which step the strip is actually showing, or -1. A step whose control cannot be pressed is NOT
 // shown: the nudge takes over, because it is the one that knows how to say "your foragers cannot
@@ -1668,7 +1696,7 @@ function renderTutorial(){
   if(g.tutBase==null)g.tutBase=step;
   el.hidden=false; const st=TUT[step];
   const openBtn=isDrawer()?(st.tab==='build'||st.tab==='research'?'<button class="small" onclick="openPopup(\''+st.tab+'\')">Open</button>':''):(st.tab&&activeTab!==st.tab?'<button class="small" onclick="activeTab=\''+st.tab+'\';dirty=true">Open</button>':'');
-  el.innerHTML='<span class="step">'+(step-g.tutBase+1)+'/'+(TUT.length-g.tutBase)+'</span><span class="txt">'+(typeof st.text==='function'?st.text():st.text)+'</span>'+openBtn+'<button class="small skip" onclick="g.tut=99;track(&quot;tutorial_skip&quot;);dirty=true" title="Skip the guide">✕</button>';
+  el.innerHTML=(TUT.length-g.tutBase>1?'<span class="step">'+(step-g.tutBase+1)+'/'+(TUT.length-g.tutBase)+'</span>':'')+'<span class="txt">'+(typeof st.text==='function'?st.text():st.text)+'</span>'+openBtn+'<button class="small skip" onclick="g.tut=99;track(&quot;tutorial_skip&quot;);dirty=true" title="Skip the guide">✕</button>';
 }
 function erosionRate(){ if(mults().erosion===0)return 0; const f=flowNow(); return g.sections.reduce((a,s)=>a+(s.progress>=1?f*EROSION/(SECTION_TYPES[s.type].resist*(s.type==='log'&&has('engineering')?2:1)):0),0); }
 function renderDamStat(R,built,str){
@@ -1852,7 +1880,7 @@ function gaugeHTML(R,built,str){
   if(g.hold>0||ready){
     const pct=Math.round(g.hold/need*100);
     const rate=clamp(str/R.req,0.3,1);
-    return '<div id="gauge" class="'+(gaugeMini?'mini':'')+'"><div class="lab"><span>Pond filling</span>'+stalledChip()+'<b>'+Math.floor(g.hold)+'/'+need+' days</b><button class="fold" onclick="toggleGauge()" title="Show or hide the detail">'+(gaugeMini?'›':'‹')+'</button></div><div class="track"><i class="hold" style="width:'+pct+'%"></i></div><div class="sub" title="Below '+Math.round(R.req*0.8)+' strength the pond drains and the count restarts. A storm day drains '+(hasSpillway()?'nothing, thanks to your Spillway Section':has('channels')?'1 day':'2 days')+' instead of filling; a flash flood takes '+(has('channels')?'a quarter':'half')+' of the pond.">Strength '+fmt(str)+'/'+R.req+(rate<1?' · leaking: filling at '+Math.round(rate*100)+'% speed, repair to speed up':'')+(breachChance()>0?' · breach risk '+Math.round(breachChance()*100)+'%':'')+'</div>'+ndHtml+'</div>';
+    return '<div id="gauge" class="'+(gaugeMini?'mini':'')+'"><div class="lab"><span>Pond filling</span>'+stalledChip()+'<b>'+Math.floor(g.hold)+'/'+need+' days</b><button class="fold" onclick="toggleGauge()" title="Show or hide the detail">'+(gaugeMini?'›':'‹')+'</button></div><div class="track"><i class="hold" style="width:'+pct+'%"></i></div><div class="sub" title="'+(firstDam()?'The first pond: storms and floods batter the wall but cannot drain it.':'Below '+Math.round(R.req*0.8)+' strength the pond drains and the count restarts. A storm day drains '+(hasSpillway()?'nothing, thanks to your Spillway Section':has('channels')?'1 day':'2 days')+' instead of filling; a flash flood takes '+(has('channels')?'a quarter':'half')+' of the pond.')+'">Strength '+fmt(str)+'/'+R.req+(rate<1?' · leaking: filling at '+Math.round(rate*100)+'% speed, repair to speed up':'')+(breachChance()>0?' · breach risk '+Math.round(breachChance()*100)+'%':'')+'</div>'+ndHtml+'</div>';
   }
   // building phase: show strength toward target, and what comes next
   const pct=clamp(str/R.req*100,0,100);
@@ -1916,7 +1944,7 @@ function tabHtml(tab){
       const better=!wallTooWeak(bestWall())&&bestWall()!==g.nextType;
       h+='<button class="primary" style="width:100%" disabled>'+(better?'A '+SECTION_TYPES[g.nextType].name+' here leaves the dam short':SECTION_TYPES[g.nextType].name+'s cannot hold '+R.name)+'</button>';
       h+='<p class="note" style="margin:6px 0 0">'+(better?'Pick '+SECTION_TYPES[bestWall()].name+' above.':nr?'Research '+nr.name+' for a stronger wall.':'')+'</p>'; }
-    else h+='<button class="primary" style="width:100%" onclick="addSection()" '+(g.sections.length<R.width&&canAfford(SECTION_TYPES[g.nextType].cost)?'':'disabled')+'>Add '+SECTION_TYPES[g.nextType].name+' ('+g.sections.length+'/'+R.width+')</button>';
+    else h+='<button class="primary'+(hintGlow&&hintWanted()?' callout':'')+'" style="width:100%" onclick="addSection()" '+(g.sections.length<R.width&&canAfford(SECTION_TYPES[g.nextType].cost)?'':'disabled')+'>Add '+SECTION_TYPES[g.nextType].name+' ('+g.sections.length+'/'+R.width+')</button>';
     { const weak=rebuildTargets(); if(weak.length){ const c=rebuildAllCost(weak); h+='<button style="width:100%;margin-top:6px" onclick="rebuildAll()" '+(canAfford(c)?'':'disabled')+'>Rebuild '+weak.length+' weaker section'+(weak.length>1?'s':'')+' as '+SECTION_TYPES[g.nextType].name+' ('+costText(c)+')</button>'; } }
     h+='</div>';
     h+='<p class="note">Builders work sections in order, then repair. The current wears every wall down each day (faster in spring floods, frozen in winter); weak walls wash away. '+R.name+' needs '+R.width+' sections with total strength '+R.req+', held for '+holdNeed()+' days while the pond fills.</p>';
@@ -1952,7 +1980,9 @@ function tabHtml(tab){
   return h;
 }
 // ---- phone layout: the job bar and the popups
-let jobSel='forage', popupTab=null;
+// Build, not Forage: the job bar's big + was the most visible control on frame one and it quietly moved a
+// lumberjack to foraging (round fifteen, five of six critics). On Build it does the thing the dam needs.
+let jobSel='build', popupTab=null;
 function jobRows(){ return JOBS.filter(j=>!(j.req&&!has(j.req))&&!(j.id==='stone'&&rule().noStone)); }
 function renderJobbar(){
   const el=$('#jobbar'); if(!el||!isDrawer())return;
@@ -2001,7 +2031,7 @@ function ask(text,onYes,yesLabel){ askBox={text,onYes,yes:yesLabel||'Yes'}; if(p
 function askHtml(){ return '<div class="box"><h1>Are you sure?</h1><p>'+askBox.text+'</p>'+
   '<div class="btns"><button class="primary" id="ask-yes">'+askBox.yes+'</button>'+
   '<button class="small" id="ask-no">Cancel</button></div></div>'; }
-function closePopup(){ if(popupTab)Sfx.play('close'); popupTab=null; const p=$('#popup'); if(p)p.hidden=true; dirty=true; }
+function closePopup(){ try{ hintGlow=false; }catch(e){} if(popupTab)Sfx.play('close'); popupTab=null; const p=$('#popup'); if(p)p.hidden=true; dirty=true; }
 function renderPopup(){
   const p=$('#popup'); if(!p)return;
   if(!popupTab||!isDrawer()){ p.hidden=true; return; }
@@ -2026,8 +2056,58 @@ $('#tab-toggle').onclick=()=>{};
 // Android back button (MainActivity.onBackPressed -> window.androidBack()): close what is open, else let the activity go to the background
 window.androidBack=function(){ if(askBox){ askBox=null; dirty=true; renderUI(); return true; } if(popupTab){ closePopup(); return true; } if(awayReport){ awayReport=null; dirty=true; return true; } const ov=$('#overlay'); if(ov&&!ov.hidden&&!g.complete&&!g.lost){ g.seenHelp=true; showSettings=false; ov.hidden=true; dirty=true; return true; } return false; };
 // on click, not pointerdown: opening on pointerdown put the popup's scrim under the finger in time for the same tap's click to close it
-$('#cv').addEventListener('click',e=>{ const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top; if(nearDam(x,y)){ if(isDrawer())openPopup('build'); else { activeTab='build'; dirty=true; } } });
-function nearDam(x,y){ const G=geom(); const [l,r]=G.chan(G.damY); if(x<l-30||x>r+30)return false; const u=clamp((x-l)/Math.max(1,r-l),0,1); const dy=y-(G.damAt?G.damAt(u):G.damY); return dy>-70*G.ss&&dy<36; }
+$('#cv').addEventListener('click',e=>{ const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
+  // First river: any tap on the water adds the next wall, no menu. The only way in used to be a 24 px +
+  // that opened a popup covering 58-100% of the scene; 0 of 4 random clickers and 18 curious taps on the
+  // water got anything back (round fifteen, Nadia, Dave, Priya, Elena).
+  if(quickBuildOn()&&(nearDam(x,y)||onRiver(x,y))){ quickBuild(x,y); return; }
+  // Later rivers: a tap on the water still answers - it opens Build, which names the wall or the research this
+  // river needs. A random-tapping kid sat 27 s on river 2 with nothing placed (round sixteen, Dave).
+  if(nearDam(x,y)||(onRiver(x,y)&&!g.complete&&g.sections.length<river().width&&!pokeBeaver(x,y,true))){ if(isDrawer())openPopup('build'); else { activeTab='build'; dirty=true; } return; }
+  pokeBeaver(x,y); });
+function quickBuildOn(){ return g.river===0&&!g.damsBuilt&&!g.complete&&!g.lost&&g.sections.length<river().width&&!askBox&&!showSettings&&g.seenHelp; }
+function onRiver(x,y){ const G=geom(); if(y<G.hz+6||y>H)return false; const [l,r]=G.chan(y); return x>=l-6&&x<=r+6; }
+const tapFx=[];   // floating words and rings where the player tapped: toasts are off by default, so the canvas answers
+function fxText(x,y,text,col){ tapFx.push({x,y,text,col:col||'#ffe9b8',t0:performance.now()/1000}); if(tapFx.length>6)tapFx.shift(); }
+function quickBuild(x,y){
+  const t=SECTION_TYPES[g.nextType];
+  if(wallTooWeak(g.nextType)){ if(isDrawer())openPopup('build'); else { activeTab='build'; dirty=true; } return; }
+  if(!canAfford(t.cost)){ Sfx.play('buzz'); const k=Object.keys(t.cost).find(k=>g.res[k]<t.cost[k]); fxText(x,y,'Need '+Math.ceil(t.cost[k]-g.res[k])+' more '+k,'#ffc9a0'); return; }
+  const n=g.sections.length; addSection(); if(g.sections.length>n){ Sfx.play('logdrop'); fxText(x,y,t.name+' added!'); }
+}
+// The passive player. Round fifteen: hands-off for 60-115 s, the guide text never changed, nothing
+// escalated, and 0 of 60 such runs won (Marcus, Priya, Sofia). Seconds of PLAY (pause and menus do not
+// count) since this page load, while only the pre-built section stands on river 1.
+const HINT_AT=6, HINT_OPEN_AT=15; let hintClock=0, hintOpened=false, hintAt=null, hintGlow=false;
+// Until EVERY gap is filled, and the clock restarts on each Add: a player who placed two walls and stopped sat
+// at 3/4 for a minute with no help (round sixteen, Nadia). Build still auto-opens only once.
+function hintWanted(){ return quickBuildOn(); }
+// 'click' with a mouse, 'tap' on touch - the layout (drawer or not) says nothing about which one is in the player's hand
+function tapWord(){ try{ return matchMedia('(pointer:fine)').matches?'click':'tap'; }catch(e){ return 'tap'; } }
+let _dispFont=null; function displayFont(){ if(_dispFont)return _dispFont; try{ _dispFont=getComputedStyle(document.body).getPropertyValue('--display').trim()||null; }catch(e){} return _dispFont||'sans-serif'; }
+function drawBuildHint(x,y,t){
+  const w=tapWord(), txt=w[0].toUpperCase()+w.slice(1)+' the river to build!';
+  const bob=Math.abs(Math.sin(t*4))*7;
+  ctx.save(); ctx.font='18px '+displayFont(); ctx.textAlign='center'; ctx.textBaseline='middle';
+  const tw=ctx.measureText(txt).width+26, th=34, bx=clamp(x,tw/2+6,W-tw/2-6), by=Math.max(th/2+4,y-46-bob);
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.roundRect(bx-tw/2,by-th/2+3,tw,th,12); ctx.fill();
+  const gb=ctx.createLinearGradient(0,by-th/2,0,by+th/2); gb.addColorStop(0,'#fff6df'); gb.addColorStop(1,'#f0dcae');
+  ctx.fillStyle=gb; ctx.beginPath(); ctx.roundRect(bx-tw/2,by-th/2,tw,th,12); ctx.fill(); ctx.strokeStyle='#3a2210'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#3a2210'; ctx.fillText(txt,bx,by+1);
+  // pointer: a fat arrow from the bubble down to the +
+  const ay=by+th/2+4, ax=clamp(x,bx-tw/2+14,bx+tw/2-14);
+  ctx.fillStyle='#fff6df'; ctx.strokeStyle='#3a2210'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(ax-9,ay); ctx.lineTo(ax+9,ay); ctx.lineTo(ax,ay+14+bob*0.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore(); }
+function pokeBeaver(x,y,test){
+  let best=null, bd=1e9; const now=performance.now()/1000;
+  for(const a of actors){ if(!(a.alpha>0.5)||!a._hh)continue; const hh=a._hh;
+    if(Math.abs(x-a.x)>hh*0.4||y<a.y-hh*1.05||y>a.y+6)continue; const d=Math.abs(x-a.x)+Math.abs(y-(a.y-hh*0.5)); if(d<bd){bd=d;best=a;} }
+  if(!best)return false; if(test)return true;   // test: is there a beaver under the finger (a swimmer on the water is poked, not a menu)
+  best.poke=now; Sfx.play('chitter');
+  const J=JOBS.find(j=>j.id===best.job); const tier=['','Skilled ','Master '][best.tier||0];
+  fxText(best.x,best.y-best._hh*1.1,best.job==='idle'?'Resting':tier+(J?(J.short||J.name):'Beaver'));
+}
+function nearDam(x,y){ const G=geom(); const [l,r]=G.chan(G.damY); if(x<l-30||x>r+30)return false; const u=clamp((x-l)/Math.max(1,r-l),0,1); const dy=y-(G.damAt?G.damAt(u):G.damY); return dy>-Math.max(70*G.ss,66)&&dy<36; }   // 66: the + now sits higher (it is bigger), and at ss 0.45 it fell outside -70*ss
 window.addEventListener('pointerdown',()=>{ lastTouch=performance.now(); },{capture:true,passive:true});
 window.addEventListener('resize',()=>syncDrawer());
 if(window.ResizeObserver)new ResizeObserver(()=>{ if(isDrawer())syncDrawer(); }).observe($('#panel'));
@@ -2056,6 +2136,13 @@ window.addEventListener('click',e=>{ const b=e.target&&e.target.closest?e.target
 //  offscreen canvas keyed by size/season/weather; water, dam, beavers,
 //  weather and lighting are drawn every frame.
 // =====================================================================
+// ctx.roundRect is missing before Chrome 99, Safari 16 / iOS 15 and Firefox 112. Without it every frame
+// threw inside the frame loop's try/catch, the transform leaked and the scene shattered into rotated
+// tiles - invisible to every gate, and the best candidate for CrazyGames' 2.63% gameplay crash rate
+// (round fifteen, Dave). Plain rounded-rect path; radii as a number or the first of an array.
+if(typeof CanvasRenderingContext2D!=='undefined'&&!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){ r=Array.isArray(r)?(r[0]||0):(+r||0); if(w<0){x+=w;w=-w} if(h<0){y+=h;h=-h} r=Math.max(0,Math.min(r,w/2,h/2));
+    this.moveTo(x+r,y); this.lineTo(x+w-r,y); this.arcTo(x+w,y,x+w,y+r,r); this.lineTo(x+w,y+h-r); this.arcTo(x+w,y+h,x+w-r,y+h,r); this.lineTo(x+r,y+h); this.arcTo(x,y+h,x,y+h-r,r); this.lineTo(x,y+r); this.arcTo(x,y,x+r,y,r); this.closePath(); return this; }; }
 const cv=$('#cv'), ctx=cv.getContext('2d');
 let W=0,H=0,DPR=1;
 function resize(){ const r=cv.parentElement.getBoundingClientRect(); DPR=Math.min(2,window.devicePixelRatio||1); W=Math.floor(r.width);H=Math.floor(r.height); if(W<2||H<2)return; cv.width=W*DPR;cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); bgKey=''; }
@@ -2940,6 +3027,7 @@ function render(t){
     }
     const ang=Math.atan2(y1-y0,secW);
     ctx.save(); ctx.translate(x,y0); ctx.rotate(ang);
+    if(sec.progress<0.3&&!sec.wrecked){ ctx.save(); ctx.globalAlpha=0.26*(1-sec.progress/0.3); drawSection(i,0,secW/Math.cos(ang),0,{type:sec.type,progress:1,hp:SECTION_TYPES[sec.type].hp,wrecked:false,pos:i},t,G.ss); ctx.restore(); }
     drawSection(i,0,secW/Math.cos(ang),0,sec,t,G.ss);
     ctx.restore();
     if(sec.progress<1){ for(let k=0;k<2;k++){ const p=(t*0.9+k*0.5+i*0.3)%1; const xx=x+secW*(0.3+k*0.4); ctx.fillStyle='rgba(255,255,255,'+(0.5*(1-p))+')'; ctx.beginPath(); ctx.arc(xx,ym+6+p*26,4,0,Math.PI*2); ctx.fill(); } }
@@ -2955,6 +3043,11 @@ function render(t){
     // The gap is staked out, not drawn in CAD: a mud shelf on the river bed with driven stakes, and a
     // soft lit crest that breathes. It still marks the tap target, but in the painting's own language.
     for(const i of holes){ const x=dl+i*secW, y0=damAt(i/R.width), y1=damAt((i+1)/R.width);
+      // The finished dam, as a faint ghost of the wall the player will place: frame one showed no goal at
+      // all, just an empty river (round fifteen, Elena). The real texture, not a tinted quad - a wash here
+      // read as a pane of glass in round eight.
+      { const ga=Math.atan2(y1-y0,secW); ctx.save(); ctx.globalAlpha=0.2+0.08*pulse; ctx.translate(x,y0); ctx.rotate(ga);
+        drawSection(i,0,secW/Math.cos(ga),0,{type:g.nextType,progress:1,hp:SECTION_TYPES[g.nextType].hp,wrecked:false,pos:i},t,G.ss); ctx.restore(); }
       // No wash. A translucent quad here reads as a pane of tinted glass laid on the river, seam and
       // all (round eight, Elena - worse than the white dashes it replaced). The stakes and the lit
       // crest say "wall goes here" without putting a surface on the water.
@@ -2971,13 +3064,20 @@ function render(t){
       ctx.lineCap='butt'; }
     // Drawn on every layout: at 1280x720 and up it was missing, and the full-screen curation sizes lost
     // the only in-world prompt in the game (the benchmark critic, round eleven). The dam is clickable there too.
-    if(holes.length){ const um=(holes[Math.floor(holes.length/2)]+0.5)/R.width, cx=dl+(dr-dl)*um, cy=damAt(um)-sh*1.9; // a plus above the gap: "tap here"
-      ctx.fillStyle='rgba(12,7,2,.30)'; ctx.beginPath(); ctx.arc(cx,cy+2,12,0,Math.PI*2); ctx.fill();   // an oak button like the rest of the UI, not a grey disc
-      let go=ctx.createLinearGradient(0,cy-12,0,cy+12); go.addColorStop(0,'#b98c52'); go.addColorStop(1,'#7d5730');
-      ctx.fillStyle=go; ctx.beginPath(); ctx.arc(cx,cy,11.5,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle='rgba(26,14,5,.85)'; ctx.lineWidth=1.6; ctx.stroke();
-      ctx.strokeStyle='rgba(255,238,205,'+(0.72+0.24*pulse)+')'; ctx.lineWidth=2.4; ctx.lineCap='round';
-      ctx.beginPath(); ctx.moveTo(cx-5.5,cy); ctx.lineTo(cx+5.5,cy); ctx.moveTo(cx,cy-5.5); ctx.lineTo(cx,cy+5.5); ctx.stroke(); ctx.lineCap='butt'; }
+    if(holes.length){ const um=(holes[Math.floor(holes.length/2)]+0.5)/R.width;
+      // 11.5 px brown on blue water was ~0.1% of the iframe (round fifteen, Elena, Nadia). Now 20-30 px
+      // with a cream rim that reads on any plate, a gentle breath and a ring that runs out from it.
+      const rr=clamp(24*G.ss,20,30), br=1+0.06*Math.sin(t*3.2), cx=dl+(dr-dl)*um, cy=damAt(um)-sh*1.9-rr*0.4;
+      const ring=(t*0.7)%1; ctx.strokeStyle='rgba(255,236,190,'+(0.55*(1-ring))+')'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(cx,cy,rr*(1+ring*0.9),0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='rgba(12,7,2,.35)'; ctx.beginPath(); ctx.arc(cx,cy+3,rr*br+1,0,Math.PI*2); ctx.fill();   // an oak button like the rest of the UI, not a grey disc
+      let go=ctx.createLinearGradient(0,cy-rr,0,cy+rr); go.addColorStop(0,'#c99a5c'); go.addColorStop(1,'#7d5730');
+      ctx.fillStyle=go; ctx.beginPath(); ctx.arc(cx,cy,rr*br,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#fff0cf'; ctx.lineWidth=3; ctx.stroke(); ctx.strokeStyle='rgba(26,14,5,.9)'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(cx,cy,rr*br+2.2,0,Math.PI*2); ctx.stroke();
+      const pl=rr*0.5; ctx.strokeStyle='#fff3da'; ctx.lineWidth=Math.max(3,rr*0.2); ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(cx-pl,cy); ctx.lineTo(cx+pl,cy); ctx.moveTo(cx,cy-pl); ctx.lineTo(cx,cy+pl); ctx.stroke(); ctx.lineCap='butt';
+      // A player who has not built anything by HINT_AT seconds of play gets a bubble and a bouncing pointer over the +.
+      hintAt=(hintWanted()&&hintClock>=HINT_AT)?[cx,cy-rr-6]:null; }
+    else hintAt=null;
     ctx.restore(); }
   // spill foam along a full dam
   // Spill foam, one strip per column. It used to be a single polygon under ONE vertical gradient
@@ -3190,7 +3290,7 @@ function render(t){
       const an=treeAnim[i]; if(an){ const k=Math.min(1,(t-an.start)/1.1); if(k<1){ drawTree(it.x,it.ty,sc,1,sl.kind,sl.seed,t,an.dir*1.35*k*k); return; } delete treeAnim[i]; }
       drawTree(it.x,it.ty,sc,v,sl.kind,sl.seed,t,null); return; }
     const a=it.a; if(a.alpha<=0)return; const sc=depthScale(a.y,G);
-    const nm=jobSprite(a.job,a.tier), hh=(G.plate?82:64)*sc*G.ss;
+    const nm=jobSprite(a.job,a.tier), hh=(G.plate?82:64)*sc*G.ss; a._hh=hh;
     // Crossing the river: beavers swim (walk, in winter: the plate paints the river as ice and they
     // were waist-deep in it with wake rings, 38 of 150 samples - Elena, round twelve). Clip the sprite at the waterline and draw a wake, rather than
     // letting it stride across the surface (the tall portrait plates made that unmissable).
@@ -3213,6 +3313,7 @@ function render(t){
       if(g.complete&&a.mode!=='walk'){ if(CHEER_SPRITE[a.job]&&nm===bn){ n2=CHEER_SPRITE[a.job]; m2='idle'; } else { m2='idle'; hop=Math.abs(Math.sin(t*5.5+a.bob*1.3))*hh*0.1; } }
       else if(a.state==='toDrop'&&nm===bn&&CARRY_SPRITE[a.job])n2=CARRY_SPRITE[a.job];
       if(!animImgs[n2+'-'+(m2==='walk'?'walk':'idle')]){ n2=nm; m2=a.mode; }
+      if(a.poke){ const k=(performance.now()/1000-a.poke)/0.55; if(k>=0&&k<1)hop+=Math.sin(k*Math.PI)*hh*0.22; }   // a tapped beaver hops
       drawSprite(n2,a.x,a.y-hop,hh,t,{face:a.face,mode:m2,job:a.job,bob:a.bob,alpha:a.alpha,dist:a.dist}); }
     const baseNm=JOB_SPRITE[a.job]||'idle';
     if(!swimming&&a.tier>0&&nm===baseNm){ for(let k=0;k<=a.tier;k++){ const px=a.x+(k-a.tier/2)*7*sc, py=a.y-hh-6*sc; ctx.fillStyle='#1a0e05'; ctx.beginPath(); ctx.arc(px,py,3.2*sc,0,Math.PI*2); ctx.fill(); ctx.fillStyle=a.tier===2?'#ffd35a':'#c9c9c9'; ctx.beginPath(); ctx.arc(px,py,2.3*sc,0,Math.PI*2); ctx.fill(); } } });
@@ -3229,6 +3330,14 @@ function render(t){
   // ---- lighting: warm sun wash + vignette
   gr=ctx.createRadialGradient(W*0.78,hz*0.4,0,W*0.78,hz*0.4,W*0.9); gr.addColorStop(0,storm?'rgba(0,0,0,0)':'rgba(255,220,150,.10)'); gr.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=gr; ctx.fillRect(0,0,W,H);
   gr=ctx.createRadialGradient(W/2,H*0.55,H*0.35,W/2,H*0.55,H*0.95); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(5,10,15,.45)'); ctx.fillStyle=gr; ctx.fillRect(0,0,W,H);
+  // the hint bubble, after every sprite: drawn with the + it was painted over by a lodge and a tree on phones (round sixteen, Elena)
+  if(hintAt&&hintWanted()&&g.sections.length<river().width)drawBuildHint(hintAt[0],hintAt[1],t);
+  if(tapFx.length){ const now=performance.now()/1000; ctx.save(); ctx.textAlign='center'; ctx.font='20px '+displayFont();
+    for(let k=tapFx.length-1;k>=0;k--){ const f=tapFx[k], a=(now-f.t0)/1.4; if(a>=1){ tapFx.splice(k,1); continue; }
+      const yy=f.y-24-a*34; ctx.globalAlpha=a<0.15?a/0.15:1-Math.max(0,(a-0.55)/0.45);
+      ctx.lineWidth=4; ctx.strokeStyle='rgba(30,16,6,.9)'; ctx.strokeText(f.text,f.x,yy); ctx.fillStyle=f.col; ctx.fillText(f.text,f.x,yy);
+      if(a<0.5){ ctx.globalAlpha=0.6*(1-a/0.5); ctx.strokeStyle='#fff0cf'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,8+a*50,0,Math.PI*2); ctx.stroke(); } }
+    ctx.restore(); }
   if(g_paused()){ ctx.fillStyle='rgba(5,12,10,.45)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#f4e6c8'; ctx.font='36px '+getComputedStyle(document.body).getPropertyValue('--display'); ctx.textAlign='center'; ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=12; ctx.fillText('PAUSED',W/2,H/2); ctx.shadowBlur=0; }
 }
 function g_paused(){ return g.speed===0&&!g.complete&&g.seenHelp; }
@@ -3246,15 +3355,29 @@ function frame(now){
     // be answered against a dam that had changed underneath it - and then do nothing, silently
     // (round eight, Dave N1). A question stops the world until it is answered.
     const playing=g.speed>0&&!g.complete&&!g.lost&&g.seenHelp&&!awayReport&&!portalHold&&!askBox&&!showSettings;
-    if(PORTAL&&playing!==Portal.playing){ Portal.playing=playing; Portal.gameplay(playing); }
+    // CrazyGames' gameplay clock runs on through the WIN_HOLD seconds the player watches the pond fill and
+    // the clan cheer - that is play - and stops when the card comes up. Their SDK says gameplayStop "has to
+    // be called on every game break (entering a menu, ending level ...)", so running it through the card
+    // (as 0.36.0's first cut did) would have counted a player idling on a menu as playing (round sixteen,
+    // code review). It always stops for an ad.
+    const portalPlay=(playing||(g.complete&&winAt>0&&performance.now()-winAt<WIN_HOLD&&g.speed>0&&!g.lost&&!askBox&&!showSettings))&&!Portal.inAd;
+    if(PORTAL&&portalPlay!==Portal.playing){ Portal.playing=portalPlay; Portal.gameplay(portalPlay); }
     if(playing){ acc+=dt*g.speed; while(acc>=DAY_MS){acc-=DAY_MS;simDay();simDirty=true} }
+    if(playing&&!popupTab&&hintWanted()){ hintClock+=dt/1000;
+      // Still nothing at 15 s: put the Build menu in front of them, once - its Add button is the biggest
+      // control in the game (round fifteen, Nadia and Priya).
+      if(hintClock>=HINT_OPEN_AT&&!hintOpened){ hintOpened=true; hintGlow=true; if(isDrawer())openPopup('build'); else { activeTab='build'; dirty=true; } track('hint_open'); } }
     // The throttle was 1500 ms against a 1800 ms day; DAY_MS is 900 now, so the panel was rendering
     // less often than the sim ticked and the numbers visibly lagged the clock (round eight, Dave N4).
     if(dirty||(simDirty&&now-lastTouch>700&&now-lastUI>DAY_MS*0.8)){ renderUI(); dirty=false; simDirty=false; lastUI=now; }
     if(simDirty)renderHeader();
     render(now/1000);
     Sfx.tick({paused:g.speed===0||!!g.lost,storm:active('storm')||active('flood'),winter:season()===3,raid:active('raid'),raidSoon:!!(g.pending&&g.pending.type==='raid'),won:!!g.complete});
-  }catch(e){ if(errCount++<5)console.error('frame error',e); }
+  }catch(e){ if(errCount++<5)console.error('frame error',e);
+    // One throw mid-render left ctx.save()s unbalanced and a rotation applied, so every later frame drew
+    // into a skewed canvas. Unwind (restore on an empty stack is a no-op) and put the base transform back.
+    try{ for(let k=0;k<40;k++)ctx.restore(); ctx.setTransform(DPR,0,0,DPR,0,0); ctx.globalAlpha=1; ctx.filter='none'; ctx.globalCompositeOperation='source-over'; }catch(e2){}
+    if(errCount<=5)try{ LS.setItem('damclan-lasterr',VERSION+' '+new Date().toISOString().slice(0,16)+' '+String(e&&e.message||e).slice(0,160)); }catch(e2){} }
 }
 Ads.init();
 // CrazyGames: the SDK's Data module is the save store for logged-in players, and it is only there once the SDK has
