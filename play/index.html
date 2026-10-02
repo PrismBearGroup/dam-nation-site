@@ -730,7 +730,7 @@ const BASE_STORAGE=150, DAY_MS=1500, SAVE_KEY='dam-nation-save-v1', SAVE_BAK='da
 //  the app build swaps in AdMob + RevenueCat without touching game code.
 // =====================================================================
 const PREMIUM_KEY='dam-nation-premium';
-const VERSION='0.36.0';
+const VERSION='0.36.1';
 const AD_AFTER_DAMS=1, BUY_AFTER_DAMS=2;   // rivers dammed before the first ad, and before the offer
 const REVIEW_AFTER_DAMS=2, REVIEW_KEY='damclan-reviewed';
 function maybeAskReview(){ // Play's own sheet, once per install, on the dammed screen of the second river - before the ad, never after it
@@ -2063,6 +2063,9 @@ $('#cv').addEventListener('click',e=>{ const r=cv.getBoundingClientRect(), x=e.c
   if(quickBuildOn()&&(nearDam(x,y)||onRiver(x,y))){ quickBuild(x,y); return; }
   // Later rivers: a tap on the water still answers - it opens Build, which names the wall or the research this
   // river needs. A random-tapping kid sat 27 s on river 2 with nothing placed (round sixteen, Dave).
+  // River 1 with every gap filled, or the win playing out: on a phone Build is a modal over the whole scene, and the
+  // finishing wall, the filling pond and the cheer all played behind it (round eighteen, Dave). Answer on the canvas.
+  if(isDrawer()&&(g.complete||(g.river===0&&!g.damsBuilt&&g.sections.length>=river().width))&&(nearDam(x,y)||onRiver(x,y))){ if(!pokeBeaver(x,y))fxText(x,y,g.complete?'Dammed!':'Builders at work!'); return; }
   if(nearDam(x,y)||(onRiver(x,y)&&!g.complete&&g.sections.length<river().width&&!pokeBeaver(x,y,true))){ if(isDrawer())openPopup('build'); else { activeTab='build'; dirty=true; } return; }
   pokeBeaver(x,y); });
 function quickBuildOn(){ return g.river===0&&!g.damsBuilt&&!g.complete&&!g.lost&&g.sections.length<river().width&&!askBox&&!showSettings&&g.seenHelp; }
@@ -2078,7 +2081,17 @@ function quickBuild(x,y){
 // The passive player. Round fifteen: hands-off for 60-115 s, the guide text never changed, nothing
 // escalated, and 0 of 60 such runs won (Marcus, Priya, Sofia). Seconds of PLAY (pause and menus do not
 // count) since this page load, while only the pre-built section stands on river 1.
-const HINT_AT=6, HINT_OPEN_AT=15; let hintClock=0, hintOpened=false, hintAt=null, hintGlow=false;
+const HINT_AT=6, HINT_OPEN_AT=15, AUTO_BUILD_AT=10; let hintClock=0, hintOpened=false, hintAt=null, hintGlow=false;
+// 0.36.1: the clan builds without you. A player who has not tapped for AUTO_BUILD_AT seconds of play watches a builder
+// start the next wall from the clan's own wood, and the clock restarts (addSection resets it). It replaces the 15 s
+// auto-open of Build, which on a phone is a modal over the whole scene from ~15 s to 60-90 s: five of six critics
+// put it first for mobile conversion falling 19% -> 12% while desktop rose 20% -> 41% (round eighteen, review/v43).
+// Zero-press player in Marcus's sim: 0/40 river-1 wins inside 60 s -> 40/40.
+function autoBuild(){
+  const t=SECTION_TYPES[g.nextType]; if(wallTooWeak(g.nextType)||!canAfford(t.cost))return false;
+  const p=hintAt||[W/2,geom().damY-40]; const n=g.sections.length; addSection();
+  if(g.sections.length===n)return false;
+  Sfx.play('logdrop'); fxText(p[0],p[1]-10,'Your builders started a wall!'); track('auto_build'); return true; }
 // Until EVERY gap is filled, and the clock restarts on each Add: a player who placed two walls and stopped sat
 // at 3/4 for a minute with no help (round sixteen, Nadia). Build still auto-opens only once.
 function hintWanted(){ return quickBuildOn(); }
@@ -3366,7 +3379,10 @@ function frame(now){
     if(playing&&!popupTab&&hintWanted()){ hintClock+=dt/1000;
       // Still nothing at 15 s: put the Build menu in front of them, once - its Add button is the biggest
       // control in the game (round fifteen, Nadia and Priya).
-      if(hintClock>=HINT_OPEN_AT&&!hintOpened){ hintOpened=true; hintGlow=true; if(isDrawer())openPopup('build'); else { activeTab='build'; dirty=true; } track('hint_open'); } }
+      // The builders go first; only if the clan cannot afford the wall does desktop bring the Build tab forward
+      // (a side panel, the river stays in view). Phones never get the modal.
+      if(hintClock>=AUTO_BUILD_AT&&autoBuild()){}
+      else if(hintClock>=HINT_OPEN_AT&&!hintOpened&&!isDrawer()){ hintOpened=true; hintGlow=true; activeTab='build'; dirty=true; track('hint_open'); } }
     // The throttle was 1500 ms against a 1800 ms day; DAY_MS is 900 now, so the panel was rendering
     // less often than the sim ticked and the numbers visibly lagged the clock (round eight, Dave N4).
     if(dirty||(simDirty&&now-lastTouch>700&&now-lastUI>DAY_MS*0.8)){ renderUI(); dirty=false; simDirty=false; lastUI=now; }
