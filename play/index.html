@@ -769,7 +769,7 @@ const BASE_STORAGE=150, DAY_MS=1500, SAVE_KEY='dam-nation-save-v1', SAVE_BAK='da
 //  the app build swaps in AdMob + RevenueCat without touching game code.
 // =====================================================================
 const PREMIUM_KEY='dam-nation-premium';
-const VERSION='0.41.0';
+const VERSION='0.42.0';
 const AD_AFTER_DAMS=1, BUY_AFTER_DAMS=2;   // rivers dammed before the first ad, and before the offer
 const REVIEW_AFTER_DAMS=2, REVIEW_KEY='damclan-reviewed';
 function maybeAskReview(){ // Play's own sheet, once per install, on the dammed screen of the second river - before the ad, never after it
@@ -780,7 +780,7 @@ function maybeAskReview(){ // Play's own sheet, once per install, on the dammed 
 // The public web build is a two-river demo: same game, stops after the second river and points at
 // the store. tools/build-site.js flips these for site/play only; the app and dist stay full.
 const DEMO=true, PLAY_URL='https://play.google.com/store/apps/details?id=com.prismbeargroup.damclan&referrer=utm_source%3Dweb_demo';
-const PORTAL='';   // '' | 'itch' | 'newgrounds' | 'crazygames' - set by tools/build-portal.js; full game on a web portal, ads via the portal SDK if it has one
+const PORTAL='';   // '' | 'itch' | 'newgrounds' | 'crazygames' | 'gamedistribution' - set by tools/build-portal.js; full game on a web portal, ads via the portal SDK if it has one
 // Five taps on the version line prints what the store side looks like on this device: whether
 // RevenueCat configured, whether remove_ads is sellable, the price it reports and the last error.
 let verTaps=0;
@@ -846,25 +846,51 @@ const Portal={
   // does nothing, and their rules also forbid rewarding on an adError, so the button must not exist at all
   // until an ad has demonstrably played.
   adsOk:null,
+  // WP17: two SDKs behind one bridge. cg = CrazyGames (SDK v3, Data-module saves, gameplay markers). gd =
+  // GameDistribution: build-portal.js loads their SDK from <head> with GD_OPTIONS.onEvent queueing every event
+  // into window.__gdEv until this script has parsed and installs window.__gdOn. Saves stay on localStorage (GD has
+  // no save module, so LS never looks at Portal.sdk here). Ads are gdsdk.showAd(): their rules want a pre-roll on
+  // the first input (never before input), mid-rolls at natural breaks (ours: between rivers), the game paused
+  // AND muted for the whole of SDK_GAME_PAUSE..SDK_GAME_START, and no outbound links (the About block matches).
+  cg:PORTAL==='crazygames', gd:PORTAL==='gamedistribution',
   // resolves when the SDK is initialised, or after 4 s without it (the game then runs ad-free on localStorage)
-  init(){ return new Promise(res=>{ if(PORTAL!=='crazygames')return res(); let done=false; const end=()=>{ if(!done){done=true;res();} }; setTimeout(end,4000);
+  init(){ return new Promise(res=>{ if(!this.cg&&!this.gd)return res(); let done=false; const end=()=>{ if(!done){done=true;res();} }; setTimeout(end,4000);
+      if(this.gd){ this._gdEnd=end; window.__gdOn=ev=>this.gdEvent(ev); const q=window.__gdEv||[]; window.__gdEv=[]; q.forEach(ev=>this.gdEvent(ev));
+        for(const ev of ['pointerup','mouseup','touchend','click','keyup'])addEventListener(ev,()=>this.gdInput(),true); return; }   /* every input kind: a real click reached the canvas but not the pointerup-only listener on their revision host (4 Oct) */   // ready latches whenever SDK_READY lands, even after the 4 s
       const go=()=>{ try{ this.sdk=window.CrazyGames&&window.CrazyGames.SDK; if(!this.sdk)return end(); Promise.resolve(window.__cgInit||this.sdk.init()).then(()=>{ this.ready=true; try{ if(!window.__cgLoading)this.sdk.game.loadingStart(); }catch(e){} this.watchSettings(); end(); }).catch(end); }catch(e){ end(); } };
       if(window.CrazyGames)return go();   // build-portal.js puts the SDK tag before the first meta so it loads while the 10 MB body parses
       const s=document.createElement('script'); s.src='https://sdk.crazygames.com/crazygames-sdk-v3.js'; s.onload=go; s.onerror=end; document.head.appendChild(s); }); },
-  loaded(){ if(this.ready)try{ this.sdk.game.loadingStop(); }catch(e){} },
+  loaded(){ if(this.ready&&this.cg)try{ this.sdk.game.loadingStop(); }catch(e){} },
   // The portal owns the mute switch in its own chrome and requires the game to follow it.
   watchSettings(){ try{ const apply=st=>{ if(!st)return; portalMute=!!st.muteAudio; Sfx.applyMute(); };
       apply(this.sdk.game.settings); if(this.sdk.game.addSettingsChangeListener)this.sdk.game.addSettingsChangeListener(apply); }catch(e){} },
   // First run on CrazyGames: carry an existing localStorage colony into the Data module rather than losing it.
-  migrate(){ if(!this.ready||!this.sdk||!this.sdk.data)return; try{ for(const k of LS_KEYS){ const v=localStorage.getItem(k); if(v!=null&&this.sdk.data.getItem(k)==null)this.sdk.data.setItem(k,v); } }catch(e){} },
-  hasAds(){ return PORTAL==='crazygames'&&this.ready&&this.adsOk!==false; },
-  hasRewarded(){ return PORTAL==='crazygames'&&this.ready&&this.adsOk===true; },
+  migrate(){ if(!this.cg||!this.ready||!this.sdk||!this.sdk.data)return; try{ for(const k of LS_KEYS){ const v=localStorage.getItem(k); if(v!=null&&this.sdk.data.getItem(k)==null)this.sdk.data.setItem(k,v); } }catch(e){} },
+  hasAds(){ if(this.gd)return this.ready&&!!(this.sdk&&this.sdk.showAd); return this.cg&&this.ready&&this.adsOk!==false; },
+  hasRewarded(){ if(this.gd)return this.ready&&this.gdRewarded===true; return this.cg&&this.ready&&this.adsOk===true; },   // GD: only once preloadAd('rewarded') has one (needs the Rewarded flag in their portal)
   // 'adsDisabledBasicLaunch' is the portal telling us ads are off for this stage of the launch
   _adErr(e){ const c=String((e&&(e.code||e.error))||e||''); if(/adsDisabled|Disabled/i.test(c))this.adsOk=false; },
-  gameplay(on){ if(!this.ready)return; try{ on?this.sdk.game.gameplayStart():this.sdk.game.gameplayStop(); }catch(e){} },
-  interstitial(){ return new Promise(res=>{ if(!this.ready)return res(); let done=false; this.inAd=true; if(this.playing){ this.playing=false; this.gameplay(false); } const end=()=>{ if(!done){done=true;this.inAd=false;res();} };
+  gameplay(on){ if(!this.ready||!this.cg)return; try{ on?this.sdk.game.gameplayStart():this.sdk.game.gameplayStop(); }catch(e){} },
+  // GameDistribution events, in the order their docs give them. SDK_GAME_PAUSE arrives when a video is about to
+  // cover the game (adsOk: an ad has demonstrably played); SDK_GAME_START when it is done. Both are idempotent with
+  // the showAd() promise, so whichever lands first wins and the other is a no-op.
+  gdEvent(ev){ const n=ev&&ev.name; if(!n)return;
+    if(n==='SDK_READY'){ if(this.ready)return; this.sdk=window.gdsdk; this.ready=true; this.gdPreload(); if(this._gdEnd)this._gdEnd(); }
+    else if(n==='SDK_GAME_PAUSE'){ this.adsOk=true; this.gdPause(); }
+    else if(n==='SDK_GAME_START')this.gdResume();
+    else if(n==='SDK_REWARDED_WATCH_COMPLETE')this.gdWatched=true; },
+  gdPause(){ if(this.gdPaused||typeof g==='undefined'||!g)return; this.gdPaused=true; this.inAd=true; this.gdSpeed=g.speed; g.speed=0; portalMute=true; Sfx.applyMute(); },
+  gdResume(){ if(!this.gdPaused)return; this.gdPaused=false; this.inAd=false; portalMute=false; Sfx.applyMute(); if(g.speed===0)g.speed=this.gdSpeed||1; dirty=true; },
+  gdPreload(){ this.gdRewarded=null; try{ if(this.sdk&&this.sdk.preloadAd)this.sdk.preloadAd('rewarded').then(()=>{ this.gdRewarded=true; dirty=true; },()=>{ this.gdRewarded=false; }); else this.gdRewarded=false; }catch(e){ this.gdRewarded=false; } },
+  // their rule: the pre-roll sits behind the first mouseUp/touchUp after SDK_READY, once, and never before input
+  gdInput(){ if(!this.gd||!this.ready||this.gdPrerolled||portalHold)return; this.gdPrerolled=true; this.interstitial('preroll'); },
+  interstitial(pos){ return new Promise(res=>{ if(!this.ready)return res(); let done=false;
+    if(this.gd){ const end=()=>{ if(!done){done=true;this.gdResume();res();} }; this.gdPause(); try{ const p=this.sdk.showAd('interstitial',{position:pos||'midroll'}); if(p&&p.then)p.then(end,end); else end(); }catch(e){ end(); } setTimeout(end,90000); return; }
+    this.inAd=true; if(this.playing){ this.playing=false; this.gameplay(false); } const end=()=>{ if(!done){done=true;this.inAd=false;res();} };
     let started=false; try{ this.sdk.ad.requestAd('midgame',{adFinished:end,adError:e=>{ this._adErr(e); end(); },adStarted:()=>{ this.adsOk=true; started=true; }}); }catch(e){ end(); } setTimeout(()=>{ if(!started)end(); },6000); setTimeout(end,45000); }); },   /* no ad inside 6 s = move on: the march sat 6-8 s dead (v56-v57, Dave) */
-  rewarded(){ return new Promise(res=>{ if(!this.ready)return res(false); let done=false; this.inAd=true; if(this.playing){ this.playing=false; this.gameplay(false); } const end=ok=>{ if(!done){done=true;this.inAd=false;res(ok);} };
+  rewarded(){ return new Promise(res=>{ if(!this.ready)return res(false); let done=false;
+    if(this.gd){ this.gdWatched=false; const end=ok=>{ if(!done){done=true;this.gdResume();this.gdPreload();res(ok);} }; this.gdPause(); try{ this.sdk.showAd('rewarded').then(()=>setTimeout(()=>end(!!this.gdWatched),50),()=>end(false)); }catch(e){ end(false); } setTimeout(()=>end(false),120000); return; }   // reward only on SDK_REWARDED_WATCH_COMPLETE, never on a rejection
+    this.inAd=true; if(this.playing){ this.playing=false; this.gameplay(false); } const end=ok=>{ if(!done){done=true;this.inAd=false;res(ok);} };
     try{ this.sdk.ad.requestAd('rewarded',{adFinished:()=>end(true),adError:e=>{ this._adErr(e); end(false); },adStarted:()=>{ this.adsOk=true; }}); }catch(e){ end(false); } setTimeout(()=>end(false),90000); }); },
 };
 const BOOST_DAYS=8, BOOST_GAP=12;   // in the save (g.boostDays, g.lastBoostDay) so a restart mid-boost keeps it
@@ -974,17 +1000,21 @@ function catchUp(){ // play the days that passed while the app was closed
   if(!g.lastSeen||g.complete||g.lost||!g.seenHelp||!g.speed||askBox)return null;   // a paused game stays paused, and so does one waiting on an answer
   const mins=(Date.now()-g.lastSeen)/60000; if(mins<4)return null;
   const want=Math.min(AWAY_MAX,Math.floor(mins*AWAY_PER_MIN)); if(want<1)return null;
-  const before={day:g.day,res:Object.assign({},g.res),beavers:g.beavers,away:(g.taken||[]).length,built:g.sections.filter(x=>x.progress>=1).length,hold:g.hold,logAt:g.log.length,lvl:g.lvl||1,q:typeof lvlQueue!=='undefined'?lvlQueue.length:0};
-  simQuiet=true; let n=0;
-  for(;n<want;){ simDay(); n++; if(g.complete||g.lost)break;   // WP11: the day that finished the dam counts ("carried on for 0 day")
-    if(n%3===0&&g.damsBuilt===g.river&&g.sections.length<river().width){ try{ const k=wallNow(); if(k){ autoActing=true; try{ if(placeWall(k))autoWallAt=performance.now(); }finally{ autoActing=false; } } }catch(e){} } }
-  simQuiet=false;
+  const bank0=Object.assign({},g.bank||{}), before={day:g.day,res:Object.assign({},g.res),beavers:g.beavers,away:(g.taken||[]).length,built:g.sections.filter(x=>x.progress>=1).length,hold:g.hold,logAt:g.log.length,lvl:g.lvl||1,q:typeof lvlQueue!=='undefined'?lvlQueue.length:0};
+  // v58 "bank, don't build" (round thirty-one, six critics): time away gathers - food, materials, science, kits - but
+  // places no walls, raises no sections, fills no pond and earns no levels, so it can never finish a river. An hour away
+  // placed 4-7 walls and 8 h won the river: the returner came back to "The dam is finished" and nothing to do.
+  simQuiet=true; bankOnly=true; let n=0;
+  try{ for(;n<want;){ simDay(); n++; if(g.complete||g.lost)break; } }
+  finally{ simQuiet=false; bankOnly=false; }
   const gained={}; for(const k of ['food','wood','mud','stone','science']){ const d=Math.round(g.res[k]-before.res[k]); if(d)gained[k]=d; }
+  const banked={}; for(const k in (g.bank||{})){ const d=Math.round(g.bank[k]-(bank0[k]||0)); if(d>0)banked[k]=d; }
   // WP11: every level earned while away is one line on the away card, not a card each - a day away queued ten cards
   // (~42 s) behind it (v55: Benchmark P2, Nadia P2). The gifts themselves are kept; only the fanfare is folded.
   let lvl=null; if(typeof lvlQueue!=='undefined'&&(g.lvl||1)>before.lvl){ const added=lvlQueue.splice(before.q); lvl={from:before.lvl,to:g.lvl,gifts:added.filter(q=>q.r).length,four:added.some(q=>q.kind==='msg'&&/4×/.test(q.title||''))}; }
+  if(g.pending&&g.pending.type==='raid'){ g.pending.days=Math.max(g.pending.days,6); g.pending.total=Math.max(g.pending.total||0,g.pending.days); }   // v59: a returner's raid landed 3.9 s after "Back to the river" (Sofia P2)
   track('catch_up',{days:n});
-  return {days:n, gained, lvl, beavers:(g.beavers+(g.taken||[]).length)-(before.beavers+before.away), away:(g.taken||[]).length-before.away, pondDown:g.pondStood&&!pondUp()&&g.pondBeds===0,
+  return {days:n, gained, banked, lvl, beavers:(g.beavers+(g.taken||[]).length)-(before.beavers+before.away), away:(g.taken||[]).length-before.away, pondDown:g.pondStood&&!pondUp()&&g.pondBeds===0,
     built:g.sections.filter(x=>x.progress>=1).length-before.built,
     hold:Math.floor(g.hold)-Math.floor(before.hold), complete:g.complete, lost:g.lost,
     notes:g.log.slice(before.logAt).filter(l=>l.kind==='bad'||l.kind==='dire').slice(-3).map(l=>l.text)};
@@ -994,7 +1024,7 @@ function tickPond(){
   if(pondUp()){ g.pondStood=true; if(g.dryDays>=3&&g.pondBeds>0)log('The pond is back up to the lodges.','good'); g.dryDays=0; if(full>g.pondBeds){ if(g.pondBeds===0&&full>0)log('The pond has reached the lodges: '+full+' more beds behind the wall.','good'); g.pondBeds=full; } else if(full<g.pondBeds)g.pondBeds=full; }
   else if(g.pondBeds>0&&g.pondStood){ g.dryDays++; if(g.dryDays===3)log('The pond is falling. The pond lodges will keep for '+(POND_GRACE-2)+' more days.','warn');   /* the beds carry upstream until a pond has stood and fallen here; a one-day blink says nothing */ if(g.dryDays>POND_GRACE){ log('The pond lodges are standing on mud: '+g.pondBeds+' beds lost until the water is back.','bad'); g.pondBeds=0; g.morale=clamp(g.morale-10,0,100); } }
   const rough=sleepingRough();
-  if(rough>0&&g.beavers>1){ g.roughDays++; if(g.roughDays>=ROUGH_LEAVE){ g.roughDays=0; const before=(g.taken||[]).length; removeBeavers(1,true); if((g.taken||[]).length>before){ const t=g.taken[g.taken.length-1]; t.rough=true; t.days=9999; log('A beaver sleeping rough has gone to find a bed elsewhere. It will come back when there is one.','bad'); } } }
+  if(rough>0&&g.beavers>1&&!bankOnly){ g.roughDays++; if(g.roughDays>=ROUGH_LEAVE){ g.roughDays=0; const before=(g.taken||[]).length; removeBeavers(1,true); if((g.taken||[]).length>before){ const t=g.taken[g.taken.length-1]; t.rough=true; t.days=9999; log('A beaver sleeping rough has gone to find a bed elsewhere. It will come back when there is one.','bad'); } } }
   else g.roughDays=0;
 }
 function tickTaken(){ // they find their own way back, and remember what they knew
@@ -1058,7 +1088,7 @@ function upkeepCost(){
 const upkeepText=()=>Object.entries(upkeepCost()).map(([k,v])=>v.toFixed(1)+' '+k).join(' · ');
 const foodUse=()=>g.beavers*0.5+sleepingRough()*0.25;   // a beaver without a bed eats half again (double starved Dave's kid to permanent loss)
 const AWAY_PER_MIN=0.5, AWAY_MAX=60;   // days per real minute away, and the cap
-let simQuiet=false, awayReport=null, raidHoldLoad=false;
+let simQuiet=false, bankOnly=false, awayReport=null, raidHoldLoad=false;
 // WP16: true while a card of any kind covers the scene. Read by simDay (the raid countdown holds), raidClock (the pill
 // holds its number) and the frame loop. No DOM: the five flags are plain state, and a sim without them reads false.
 function cardUp(){ try{ return !!(lvlSplash||awayReport||askBox||showSettings); }catch(e){ return false; } }   /* not the Build popup: 192 days passed with the raid frozen under it (v57, Priya) */
@@ -1161,13 +1191,16 @@ function simDay(){
   // production
   // Surplus to points: production over the cap used to vanish, and the stores sit at 150 from 45 s to the end of
   // every run, so the one number that keeps going up is fed by it, 1:1 per day (round twenty-seven, WP2: Dave).
-  let over=0; const fill=(k,v)=>{ const t=g.res[k]+v; if(t>cap)over+=Math.max(0,Math.min(v,t-cap)); g.res[k]=Math.min(cap,t); };
+  // v59: the away bank - what the cap would throw away during a catch-up is kept (up to twice the cap) and tops the
+  // stores up as the player spends; 8 h away gave exactly what 1 h gave, about 7 s of spending (Marcus, Sofia)
+  let over=0; const fill=(k,v)=>{ const t=g.res[k]+v; if(t>cap){ const ov=Math.max(0,Math.min(v,t-cap)); if(bankOnly){ const b=g.bank||(g.bank={}); b[k]=Math.min(cap*2,(b[k]||0)+ov); } else over+=ov; } g.res[k]=Math.min(cap,t); };
   fill('food',jobPower('forage')*3*m.food);
   fill('wood',jobPower('wood')*2*m.wood);
   fill('mud',jobPower('mud')*2*m.mud);
   fill('stone',jobPower('stone')*1*m.stone);
   if(over>0){ g.xpSpill=(g.xpSpill||0)+Math.min(SPILL_CAP,over*SPILL_XP); const w=Math.floor(g.xpSpill); if(w>0){ g.xpSpill-=w; gainXp(w,null,null,true); } }   // quiet: no float, the counter and "+N/s" show it
   g.res.science+=jobPower('research')*1*m.research;
+  if(g.bank&&!bankOnly)for(const k of Object.keys(g.bank)){ const mv=Math.min(g.bank[k],Math.max(0,cap-(g.res[k]||0))); g.res[k]=(g.res[k]||0)+mv; g.bank[k]-=mv; if(g.bank[k]<0.5)delete g.bank[k]; }
   // experience
   { const gain=has('apprentice')?2:1; for(const b of g.roster){ if(b.job==='idle')continue; const before=tierOf(b); b.xp[b.job]=(b.xp[b.job]||0)+gain; const after=tierOf(b);
       if(after>before){ const jn=JOBS.find(j=>j.id===b.job); log('A beaver has become a '+TIER_NAME[after]+' '+(jn?jn.name.toLowerCase():b.job)+' ('+Math.round((TIER_MULT[after]-1)*100)+'% more effective).','good'); } } }
@@ -1204,16 +1237,16 @@ function simDay(){
     else if(was&&!g.upkeepShort)log('The dam is being kept up again.','good');
   }
   // erosion
-  if(m.erosion>0&&!g.complete){   /* a dammed river is not worn during the march (WP12) */
+  if(m.erosion>0&&!g.complete&&!bankOnly){   /* a dammed river is not worn during the march (WP12); v59: nor while away - away time is harmless (Nadia P1: 1 h away took 16 walls to 11) */
     const f=flowNow(), neglect=g.upkeepShort?2:1;
     const w=river().width;
     g.sections.slice().forEach((s,i)=>{ if(s.progress>=1) hurt(s,neglect*sectionDepth(s.pos,w)*f*EROSION/(SECTION_TYPES[s.type].resist*(s.type==='log'&&has('engineering')?2:1)),'the current',true); });
   }
   // building
-  let work=jobPower('build')*5*m.build*(g.river<=1?0.6:1);   // rivers 1-2: the clan builds at 60%, the player's clicks are the rest (crisis round)
+  let work=jobPower('build')*5*m.build*(g.river<=1?0.6:1)*(g.rush>0?2:1); if(g.rush>0)g.rush--;   // rivers 1-2: the clan builds at 60%, the player's clicks are the rest (crisis round)
   let todo=null; g.repairStalled=null;
   for(const s of g.sections){ if(s.progress>=1)continue; if(s.wrecked&&!s.paid){ const c=wreckCost(s); if(canAfford(c)){ pay(c); s.paid=true; } else { if(!g.repairStalled)g.repairStalled=Object.keys(c).find(k=>g.res[k]<c[k]); continue; } } todo=s; break; }   // a wrecked wall is rebuilt from new materials, the same as adding it; an unpaid one is skipped, not a roadblock
-  if(todo&&work>0){
+  if(todo&&work>0&&!(bankOnly&&!todo.wrecked)){   /* v59: away still REBUILDS a wall the current wrecked (else a river-1-4 pond reset to 0), it never raises a new one */   // v58: away time banks, it never raises a wall - the returner builds (round thirty-one, six critics)
     const t=SECTION_TYPES[todo.type];
     const need=(1-todo.progress)*t.work;
     const used=Math.min(work,need);
@@ -1231,13 +1264,13 @@ function simDay(){
   }
   // events
   let stormDrain=0;
-  if(!g.complete)for(const e of g.events){   /* WP12: the march ticks days, never events, raids or the win check */
+  if(!g.complete&&!bankOnly)for(const e of g.events){   /* WP12: the march ticks days, never events, raids or the win check; v59: nor time away */
     e.days--;
     if(e.type==='storm'){ damageDam(flowNow()*1.5*(1+0.1*g.river)*(has('channels')?0.5:1)*(has('wardens')?0.7:1),'the storm'); if(!hasSpillway()&&!firstDam())stormDrain+=has('channels')?1:2; }
   }
   // 0.41 (WP3): a lost raid's cost lands a day AFTER the horn, while the rivals are still crossing the bank, so a
   // tap on them during the advance can still turn it (round twenty-seven: Dave, Priya, Marcus, Sofia).
-  if(!g.complete)for(const e of g.events)if(e.type==='raid'&&e.loss&&e.days<=1)applyRaidLoss(e);
+  if(!g.complete&&!bankOnly)for(const e of g.events)if(e.type==='raid'&&e.loss&&e.days<=1)applyRaidLoss(e);
   g.events=g.events.filter(e=>e.days>0);
   // WP11: the rivals wait while the player is away. A catch-up (simQuiet) neither counts the warning down nor lets the
   // clock fire, so a returning player meets the raid they left, not its aftermath (v55: Marcus P2, Dave P2, Nadia).
@@ -1246,14 +1279,14 @@ function simDay(){
   // landed under a level-16 card and the returning player's raid resolved behind the welcome card (v56: Marcus P1 x2,
   // Dave P1, Nadia P1). The clock holds the way a catch-up holds it; it waits for the card to close.
   const raidHold=simQuiet||cardUp()||raidHoldLoad;   /* a raid loaded from a save waits for the first input or 8 s of play: it landed 0.8 s after load (v57, Marcus P1) */
-  if(g.pending&&!raidHold&&!g.complete){ g.pending.days--; if(g.pending.days<=0){resolveRaid();g.pending=null} }
+  if(g.pending&&!raidHold&&!g.complete){ g.pending.days--; if(g.pending.days<=0){resolveRaid();g.pending=null;releaseGuards();} }
   // 0.41 (WP3): river 2's first raid is on a clock, not a dice roll - the first thing that could hurt used to arrive at
   // ~110-250 s, after the median CrazyGames player had gone (round twenty-seven, five of six critics).
   if(g.raidAt!=null&&(raidHold||g.complete))g.raidAt++;
   else if(g.raidAt!=null&&!g.pending&&g.day>=g.raidAt){ g.raidAt=null; raidSched=true; try{ startEvent('raid'); }finally{ raidSched=false; } }
   if(g.river===0&&g.floodAt!=null&&g.day>=g.floodAt&&!simQuiet&&!g.complete)springFlood();   // 0.41 (WP9): river 1's spring flood lands on its clock (never during a catch-up or the march)
-  if(g.pendingWeather&&!g.complete){ g.pendingWeather.days--; if(g.pendingWeather.days<=0){ const w=g.pendingWeather; g.pendingWeather=null; startEvent(w.type,true); } }
-  if(g.complete){ /* no roll during the march (WP12) */ }
+  if(g.pendingWeather&&!g.complete&&!bankOnly){ g.pendingWeather.days--; if(g.pendingWeather.days<=0){ const w=g.pendingWeather; g.pendingWeather=null; startEvent(w.type,true); } }
+  if(g.complete||bankOnly){ /* no roll during the march (WP12) or time away (v59) */ }
   else if(g.cooldown>0)g.cooldown--;
   // River 1 used to be able to pass with no adversity at all - three-quarters of new players met
   // nothing, so the game never showed them what it is about (round seven, Marcus: 6 of 24 seeds).
@@ -1266,10 +1299,10 @@ function simDay(){
   // dam complete?
   if(g.complete){ /* already dammed: the march must not pay the win again (WP12) */ }
   else if(damReady()){
-    if(stormDrain>0&&g.hold>0){ // a storm day costs the pond ground; it does not also fill
+    if(stormDrain>0&&g.hold>0&&!bankOnly){   /* v59: away neither fills nor drains the pond - 1 h away took it 24.3 -> 18.3 of 36 and never refilled (Dave P2) */ // a storm day costs the pond ground; it does not also fill
       const was=Math.floor(g.hold); g.hold=Math.max(0,g.hold-stormDrain);
       if(was>Math.floor(g.hold))log('The storm drove '+stormDrain+' day'+(stormDrain>1?'s':'')+' of water back over the wall.','warn');
-    } else {
+    } else if(!bankOnly){   // v58: away time banks, it never fills the pond
       g.hold+=holdRate(); gainXp(1);   // levels keep landing through rivers 3-4 (round twenty-one, Sofia)
       if(g.hold<=1)log('The wall spans '+R.name+'. Hold it for '+holdNeed()+' days while the pond fills. Fish gather: foraging +'+(has('weirs')?60:30)+'%.','good');
     }
@@ -1458,6 +1491,17 @@ function applyRaidLoss(rev){ const L=rev.loss; if(!L)return; rev.loss=null; cons
   log('Rival beavers raided the camp'+(L.defense>0?' despite your guards':'')+': stole '+w+' wood and '+f+' food'+(taken?' and dragged off '+taken+' beaver'+(taken>1?'s':''):'')+'.',taken?'dire':'bad');
   if(taken)log(taken>1?'They will make their way back in a week or so'+(jobPower('guard')>0?' - the guards know where to look.':'.'):'It will make its way back in a week or so'+(jobPower('guard')>0?' - the guards know where to look.':'.'),'info');
   damageDam(L.ratio*L.strength*4*(1+0.1*r)*(L.early?0.5:1),'raiders',true); }
+// v58: guards posted for a raid (the strip or the pill) go back to the job they came from once it is over - they were
+// never released, and a clicker ended a river with 13 guards and 0 builders (Priya). Guards set in the Beavers tab stay.
+// v59: one tap posts every guard the raid needs - from river 7 every river opened with 4-7 guard taps in a row, 20 of 28
+// strip buys in minutes 5-10 (Sofia). Each is remembered so releaseGuards() sends it back to its job.
+function postGuards(){ const p=(g.pending&&g.pending.type==='raid')?g.pending:null, str=(p&&p.str)||g.raidStr||0; let n=0;
+  for(let i=0;i<20&&str>0&&guardDefence()<str&&canAddTo('guard');i++){ const from=g.roster.some(b=>b.job==='idle')?'idle':donorJob('guard'); const before=g.jobs.guard||0; setJob('guard',1); if((g.jobs.guard||0)<=before)break; (g.qbGuards=g.qbGuards||[]).push(from||'build'); n++; }
+  return n; }
+function releaseGuards(){ const q=g.qbGuards; g.qbGuards=[]; if(!q||!q.length||(g.pending&&g.pending.type==='raid'))return;
+  const n=Math.min(q.length,g.jobs.guard||0); if(n<1)return; const c=Object.assign({},g.jobs); c.guard-=n;
+  for(const from of q.slice(0,n))if(from!=='idle'&&from!=='guard'&&from in c)c[from]=(c[from]||0)+1;
+  applyJobCounts(c); log(n===1?'The guard went back to work.':'The '+n+' guards went back to work.','info'); }
 function resolveRaid(p){
   const r=g.river; p=p||g.pending||{};
   const strength=p.str>0?p.str:raidStrength();   /* WP15: the number the pill promised */
@@ -1601,7 +1645,7 @@ const TIER_NEED=[0,0,2,4]; const tierOpen=t=>g.damsBuilt>=TIER_NEED[t||1];
 function canResearch(r){ return !(r.id==='mudpack'&&g.complete&&g.river===0&&!g.damsBuilt)&&!has(r.id)&&tierOpen(r.tier)&&!(r.req&&!has(r.req))&&g.res.science>=sciCost(r)&&canAfford(r.mat||{}); }
 function buy(id){ const r=RESEARCH.find(x=>x.id===id); if(!canResearch(r)){Sfx.play('buzz');return} g.res.science-=sciCost(r); pay(r.mat||{}); g.research[id]=true; track('research',{id}); gainXp(10); if(SECTION_TYPES[bestWall()].strength>SECTION_TYPES[g.nextType].strength)g.nextType=bestWall(); log('Researched '+r.name+'.','good'); Sfx.play('research'); }
 let retarget=false;   // set when the world moves under the actors; render re-homes them next frame
-function nextRiver(){
+function nextRiver(){ try{ if(!(g.pending&&g.pending.type==='raid'))releaseGuards(); }catch(e){}   // v59: guards posted against the raid clock went upstream still guarding (Sofia P2)
   track('move_upstream',{to:g.river+1,day:g.day});
   retarget=true;
   g.riverStart=g.day;
@@ -1756,7 +1800,7 @@ function renderUI(){
     const a=awayReport, bits=[];
     bits.push(cacheReady()?'<li><b>your cache is ready</b>: '+tapWord()+' the hollow log on the bank to crack it open</li>':'<li>come back tomorrow for your <b>Day '+((g.streak||1)+1)+' gift</b>'+(g.cache&&g.cache.fill>0?' and to crack open your cache':'')+'</li>');   // the reason to return, said where returning players look (round twenty-one, Dave)
     if(a.lvl)bits.push('<li>clan level <b>'+a.lvl.from+' → '+a.lvl.to+'</b>: '+a.lvl.gifts+' discover'+(a.lvl.gifts===1?'y':'ies')+' unlocked'+(a.lvl.four?', and 4× speed':'')+'</li>');   // WP11: one line for every level earned away
-    if(a.built)bits.push('<li><b>'+a.built+'</b> more section'+(a.built>1?'s':'')+' finished</li>');
+    if(a.built>0)bits.push('<li><b>'+a.built+'</b> more section'+(a.built>1?'s':'')+' finished</li>');
     if(g.pending&&g.pending.type==='raid'&&!g.complete)bits.push('<li><b>rivals are on the far bank</b>, waiting for you: tap them, or post a Guard</li>');   // WP11: the raid held while you were away
     if(a.hold>0)bits.push('<li>the pond rose <b>'+a.hold+'</b> more day'+(a.hold>1?'s':'')+'</li>');
     if(a.beavers>0)bits.push('<li><b>'+a.beavers+'</b> more beaver'+(a.beavers>1?'s':'')+' in the clan</li>');
@@ -1765,7 +1809,10 @@ function renderUI(){
     if(a.pondDown)bits.push('<li>the pond drained and the pond beds are gone until it stands again</li>');
     const g2=Object.entries(a.gained).filter(([k,v])=>v>0).map(([k,v])=>'+'+v+' '+k);
     if(g2.length)bits.push('<li>gathered '+g2.join(', ')+'</li>');
-    ovSet('<div class="box"><h1>While you were away</h1><p>The clan carried on for <b>'+a.days+' day'+(a.days>1?'s':'')+'</b>.</p>'+
+    const b2=Object.entries(a.banked||{}).map(([k,v])=>'+'+v+' '+k);
+    if(b2.length)bits.push('<li><b>banked '+b2.join(', ')+'</b> beyond the stores: it tops them up as you spend</li>');   // v59: the away bank
+    if(!g.complete&&!g.lost)bits.push(damReady()?'<li><b>the pond waited for you</b>: it fills again now you are back - hold the dam</li>':g.sections.length<river().width?'<li><b>the building waited for you</b>: the stores are stocked - '+tapWord()+' the river to raise the next wall</li>':'<li><b>the building waited for you</b>: '+tapWord()+' the dam to help the builders finish</li>');   // v59: not "raise the next wall" when every wall is placed (Sofia)   // v58: away banks, the player builds
+    ovSet('<div class="box"><h1>While you were away</h1><p>The clan gathered for <b>'+a.days+' day'+(a.days>1?'s':'')+'</b>.</p>'+
       (bits.length?'<ul>'+bits.join('')+'</ul>':'<p>Not much happened.</p>')+
       (a.notes.length?'<p class="note">'+a.notes.join('<br>')+'</p>':'')+
       (a.complete?'<p><b>The dam is finished.</b></p>':'')+
@@ -2072,10 +2119,11 @@ function quickBuys(){ const out=[];
   if(g.lost||g.complete)return out;
   // WP15: a raid on its way with the guards short puts "Post a Guard" first - the strip offered Sentries at 142 science
   // while the rivals stood on the bank (v56 Sofia item 3)
-  try{ const p=(g.pending&&g.pending.type==='raid')?g.pending:(g.raidAt!=null&&g.raidStr>0?{type:'raid',str:g.raidStr}:null); if(p&&p.type==='raid'&&p.str>0&&guardDefence()<p.str&&canAddTo('guard')){ const need=guardsToHold(p.str), n=g.jobs.guard||0; out.push({k:'guard',name:'Post a Guard',cost:n+'/'+need+ico('guard'),ok:true,title:need+' guard'+(need>1?'s':'')+' hold this raid - '+jobAction('guard')}); } }catch(e){}
+  try{ const p=(g.pending&&g.pending.type==='raid')?g.pending:(g.raidAt!=null&&g.raidStr>0&&g.raidAt-g.day<=raidWarnDays()+3?{type:'raid',str:g.raidStr}:null);   /* v59: not for a raid still ~20 days off with no countdown on screen (Marcus P2) */ if(p&&p.type==='raid'&&p.str>0&&guardDefence()<p.str&&canAddTo('guard')){ const need=guardsToHold(p.str), n=g.jobs.guard||0; out.push({k:'guard',name:'Post a Guard',cost:n+'/'+need+ico('guard'),ok:true,title:need+' guard'+(need>1?'s':'')+' hold this raid - '+jobAction('guard')}); } }catch(e){}
   try{ const open=x=>x&&!has(x.id)&&tierOpen(x.tier||1)&&!(x.req&&!has(x.req)), free=x=>x.id==='mudpack'&&g.river===0&&!g.damsBuilt;   // Mud Packing is the first dam's gift: never sold on river 1
     let r=recommendedResearch(); if(r&&free(r))r=researchSorted().find(x=>open(x)&&!free(x))||null;
     if(open(r)&&!free(r))out.push({k:'res:'+r.id,name:r.name,cost:sciCost(r)+ico('sci')+Object.entries(r.mat||{}).map(([m,v])=>' '+v+ico(m)).join(''),ok:canResearch(r),title:r.desc||''}); }catch(e){}
+  try{ const c=rushCost(); if(rushWanted())out.push({k:'rush',name:'Rush the wall',cost:Object.entries(c).map(([m,v])=>v+ico(m)).join(' '),ok:canAfford(c),title:'Spend the full stores: the builders work twice as fast for '+RUSH_DAYS+' days'}); }catch(e){}
   try{ if(clanSize()<housing()&&foodBalance()>=0.5)out.push({k:'recruit',name:'Recruit',cost:recruitCost().food+ico('food'),ok:canRecruit()&&g.res.food-recruitCost().food>=foodUse()*3,title:'A new beaver joins the clan'});   // lit only with three days of food left after: one click took the larder 53 -> 3 in the first test
     else if(clanSize()>=housing()){ const c=lodgeCost(); out.push({k:'lodge',name:'Lodge',cost:c.wood+ico('wood'),ok:canAfford(c),title:'+'+(has('lodge2')?6:4)+' beds: the lodges are full'}); } }catch(e){}
   return out.slice(0,3); }
@@ -2084,19 +2132,32 @@ function quickBuyFrac(k){ try{ const f=(have,need)=>need>0?clamp(have/need,0,1):
     if(k.indexOf('res:')===0){ const r=RESEARCH.find(x=>x.id===k.slice(4)); if(!r)return 0; let m=f(g.res.science||0,sciCost(r)); for(const [mat,v] of Object.entries(r.mat||{}))m=Math.min(m,f(g.res[mat]||0,v)); return m; }
     if(k==='recruit')return f(g.res.food||0,recruitCost().food+foodUse()*3);
     if(k==='lodge')return f(g.res.wood||0,lodgeCost().wood);
+    if(k==='rush'){ let m=1; for(const [mat,v] of Object.entries(rushCost()))m=Math.min(m,f(g.res[mat]||0,v)); return m; }
   }catch(e){} return 0; }
-function quickBuyHtml(){ if(typeof H==='number'&&H>0&&H<330&&typeof W==='number'&&W<850)return ''; if(lastQbHtml&&performance.now()-lastQb<1000)return lastQbHtml;   /* a burst re-flowed the strip and bought the neighbour (v57, Dave P1) */   /* 800x450 only: 907x510 is 323 px tall and must keep the strip */   /* not on a ~300 px scene (800x450): the gauge covered the crest and its builders (matrix cg800 damCam) */ const all=quickBuys(); if(!all.length)return '';
+function quickBuyHtml(){ if(typeof H==='number'&&H>0&&H<330&&typeof W==='number'&&W<850)return ''; const held=lastQbItems&&performance.now()-lastQbTap<1000;   /* v59: the LAYOUT holds until 1 s after the last tap on the strip - when it held 1 s after a purchase, a burst outlived it, the strip re-flowed and the next tap bought the neighbour (Sofia P1: 12 taps on Guard bought Spirit Lodges) - but each button shows its state NOW, so a bought or refused one goes grey at once (v58, Priya: 77 dead taps on a gold button) */   /* a burst re-flowed the strip and bought the neighbour (v57, Dave P1) */   /* 800x450 only: 907x510 is 323 px tall and must keep the strip */   /* not on a ~300 px scene (800x450): the gauge covered the crest and its builders (matrix cg800 damCam) */ const all=quickBuys(); if(!all.length&&!held)return '';
   // WP16: only lit buttons, plus at most ONE greyed "next" item with a thin fill bar toward its price - the strip was two
   // grey buttons in 73% of captures over ten minutes (v56, Elena P1)
-  const nxt=all.find(b=>!b.ok), q=all.filter(b=>b.ok).concat(nxt?[nxt]:[]);
-  return lastQbHtml='<div class="qb">'+q.map(b=>{ const fr=b.ok?1:quickBuyFrac(b.k), pc=Math.round(fr*100);
+  let q; if(held)q=lastQbItems.map(o=>all.find(b=>b.k===o.k)||{k:o.k,name:o.name,cost:o.cost,ok:false,title:o.title,gone:true});
+  else { const nxt=all.find(b=>!b.ok); q=all.filter(b=>b.ok).concat(nxt?[nxt]:[]); if(typeof H==='number'&&H>0&&H<400)q=q.slice(0,2);   /* v59: two on a ~320 px scene (907x510) - Rush made it three and the strip covered 38% of the builders (matrix cg907 damCam) */ lastQbItems=q.map(b=>({k:b.k,name:b.name,cost:b.cost,title:b.title})); }
+  return lastQbHtml='<div class="qb">'+q.map(b=>{ if(b.gone)return '<button class="no" data-qb="'+b.k+'" disabled>'+b.name+'<small>done</small></button>'; const fr=b.ok?1:quickBuyFrac(b.k), pc=Math.round(fr*100);
     return '<button class="'+(b.ok?'yes':'no')+'" data-qb="'+b.k+'" title="'+(b.ok?'':'Next: ')+b.title.replace(/"/g,'&quot;')+(b.ok?'':' ('+pc+'% of the price saved)')+'" '+(b.ok?'':'disabled')+'>'+(b.ok?'':'<em>next</em>')+b.name+'<small>'+b.cost+'</small>'+(b.ok?'':'<i class="qf" style="width:'+pc+'%"></i>')+'</button>'; }).join('')+'</div>'; }
-let lastQb=0, lastQbHtml='';
-function quickBuy(k,btn){ const _n=performance.now(); if(_n-lastQb<300)return; lastQb=_n; let done='';   /* 12 taps bought four discoveries (v57, Sofia, Priya) */
+let lastQb=0, lastQbOk=0, lastQbTap=0, lastQbItems=null, lastQbHtml='';
+// v58: "Rush the wall" - the sink for full stores. Stores sat at 141-150 of 150 from minute 1-2.5, so every buy glowed and
+// "build, build, unlock" was a batch (round thirty-one, six critics). Rush spends the surplus on the player's own speed;
+// the clan never rushes by itself, and it competes with research, recruits and lodges for the same wood and mud.
+const RUSH_DAYS=6;
+function rushCost(){ const n=15+5*g.river, c={wood:n*2}; if(has('mudpack'))c.mud=n*2; return c; }
+function rushWanted(){ return g.river>=1&&!g.complete&&!g.lost&&!(g.rush>0)&&g.sections.some(x=>x.progress<1)&&g.res.wood>=storage()*0.4; }   /* v59: from 40% - at 70% it could never compete with anything (Marcus) */
+function quickBuy(k,btn){ const _n=performance.now(); lastQbTap=_n; clearTimeout(quickBuy._t); quickBuy._t=setTimeout(()=>{ dirty=true; try{ renderUI(); }catch(e){} },1050); if(_n-lastQb<300)return; lastQb=_n; let done='';   /* 12 taps bought four discoveries (v57, Sofia, Priya) */
+  // v58: only what the strip offers NOW, lit. The cached strip kept "Post a Guard" live after the raid was covered:
+  // 7 of 10 beavers guarding in 9 s, one run 13 guards / 0 builders and river 2 stuck 100+ days (Dave P1, Priya)
+  if(!quickBuys().some(q=>q.k===k&&q.ok)){ dirty=true; renderUI(); return; }
+  lastQbOk=_n;
   if(k.indexOf('res:')===0){ const id=k.slice(4), r=RESEARCH.find(x=>x.id===id); if(!r||!canResearch(r))return; buy(id); done='Researched '+r.name+'!'; }
   else if(k==='recruit'){ if(!canRecruit()||g.res.food-recruitCost().food<foodUse()*3)return; recruit(); done='A beaver joins!'; }
+  else if(k==='rush'){ const c=rushCost(); if(!rushWanted()||!canAfford(c))return; pay(c); g.rush=RUSH_DAYS; Sfx.play('click'); done='Builders rushing!'; }
   else if(k==='lodge'){ if(!canAfford(lodgeCost()))return; buildLodge(); Sfx.play('click'); done='Lodge built: '+housing()+' beds'; }
-  else if(k==='guard'){ if(!canAddTo('guard'))return; setJob('guard',1); Sfx.play('click'); done='Guard posted!'; }   // WP15: the same move as the pill's button
+  else if(k==='guard'){ const n=postGuards(); if(!n)return; Sfx.play('click'); done=n>1?n+' guards posted!':'Guard posted!'; }   // WP15: the same move as the pill's button; v58: remembered so the raid sends them back
   else return;
   try{ firstAction(k); }catch(e){} track('quick_buy',{k});
   try{ const r=btn.getBoundingClientRect(), c=cv.getBoundingClientRect(); fxText(r.left+r.width/2-c.left,r.top-c.top-8,done,'#ffe27a'); }catch(e){}
@@ -2301,7 +2362,7 @@ function tickCounter(dt){ const el=$('#s-lvl'); if(!el||typeof el.querySelector!
   const L=g.lvl||1, a=lvlXp(L), b=lvlXp(L+1), w=Math.round(clamp((shownXp-a)/Math.max(1,b-a),0,1)*100)+'%', bar=el.querySelector('.lvbar i'); if(bar.style.width!==w)bar.style.width=w; }
 function fxFly(x,y,text,n){ try{ y=clearHud(x,y,12,12); }catch(e){} const now=performance.now()/1000, e=heroPos()||{x:W/2,y:-20}, dx=e.x-x;
   tapFly.push({x,y,x1:e.x,y1:e.y,cx:x+dx*0.5-Math.sign(dx||1)*Math.min(90,Math.abs(dx)*0.3),cy:Math.min(y,e.y)-50,text,n:n||0,t0:now}); if(tapFly.length>8){ const f=tapFly.shift(); if(f.n){ heroPopAt=now; } } }
-function gainXp(n,x,y,quiet){ if(!(n>0))return; g.xp=(g.xp||0)+n; try{ cacheFeed(n); }catch(e){}
+function gainXp(n,x,y,quiet){ if(!(n>0)||bankOnly)return;   /* v58: no levels earned while away */ g.xp=(g.xp||0)+n; try{ cacheFeed(n); }catch(e){}
   try{ if(!quiet&&typeof W==='number'&&W>0&&typeof fxFly==='function'){ const now=performance.now()/1000, tw=tapFly.find(f=>f.n>0&&now-f.t0<0.3);
       if(tw){ tw.n+=n; tw.text='+'+tw.n; }   // floats inside 300 ms merge into one "+N" (a hold showed "+1 XP" every 1.5 s)
       else if(n>=3||x!=null){ let px=x, py=y; if(px==null){ px=Math.min(W-40,110+Math.random()*30); py=(()=>{ try{ const ge=$('#gauge'); return ge&&!ge.hidden?ge.getBoundingClientRect().bottom-cv.getBoundingClientRect().top+30:70; }catch(e){ return 70; } })(); } fxFly(px,py,'+'+n,n); } } }catch(e){}
@@ -2477,9 +2538,10 @@ function pokeRival(x,y){
   if(raidPill&&!raidPill.guard&&x>=raidPill.x&&x<=raidPill.x+raidPill.w&&y>=raidPill.y&&y<=raidPill.y+raidPill.h)return true;   /* the pill's body is not the river (v57, Sofia) */
   if(raidPill&&raidPill.guard){ if(x>=raidPill.x&&x<=raidPill.x+raidPill.w&&y>=raidPill.y&&y<=raidPill.y+raidPill.h&&!(x>=raidPill.guard.x&&x<=raidPill.guard.x+raidPill.guard.w))return true; const q=raidPill.guard; if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){
     pillHold={w:raidPill.w,gx:raidPill.gx,gw:raidPill.gw,until:performance.now()+1000};   // WP15: the footprint stands for a second
-    const strN=(g.pending&&g.pending.str)||g.raidStr||0, enough=strN>0&&guardDefence()>=strN;
-    if(enough){ Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,'Guards hold it already','#bff0a0'); }   /* 40 taps posted 6 guards and emptied Build (v57, Nadia) */
-    else if(canAddTo('guard')){ setJob('guard',1); try{ firstAction('guard'); }catch(e){} Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,'Guard posted!','#bff0a0'); } else { Sfx.play('buzz'); fxText(q.x+q.w/2,q.y+q.h,'Nobody free to guard'); }
+    const strN=(g.pending&&g.pending.str)||g.raidStr||0, enough=strN>0&&guardDefence()>=strN, decided=!g.pending&&g.events.some(e=>e.type==='raid');
+    if(decided){ Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,'This raid is decided','#bff0a0'); }   /* v59: the pill posted guards for the NEXT raid after this one was decided (Nadia) */
+    else if(enough){ Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,'Guards hold it already','#bff0a0'); }   /* 40 taps posted 6 guards and emptied Build (v57, Nadia) */
+    else if(canAddTo('guard')){ const n=postGuards()||0; try{ firstAction('guard'); }catch(e){} Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,n>1?n+' guards posted!':'Guard posted!','#bff0a0'); }   // v59: one tap posts what the raid needs else { Sfx.play('buzz'); fxText(q.x+q.w/2,q.y+q.h,'Nobody free to guard'); }
     dirty=true; return true; } }
   const pend=g.pending&&g.pending.type==='raid'?g.pending:null, ev=pend?null:g.events.find(e=>e.type==='raid'&&e.loss), tgt=pend||ev;
   if(!tgt||!rivalRects.length)return false;
@@ -2487,7 +2549,7 @@ function pokeRival(x,y){
   if(!hit)return false;
   tgt.shoo=(tgt.shoo||0)+1; rivalKnock[hit.i]=(rivalKnock[hit.i]||0)+1; rivalPoke[hit.i]=performance.now(); Sfx.play('tailslap'); try{ firstAction('shoo'); }catch(e){}
   const need=raidShooNeed(), done=tgt.shoo>=need; fxText(hit.x,hit.y-hit.h*1.15,done?'Repelled!':'Shoo! '+tgt.shoo+'/'+need,done?'#bff0a0':'#ffd27a');
-  if(done){ if(pend){ g.pending=null; resolveRaid(pend); } else raidHeld(ev,'shoo'); }
+  if(done){ if(pend){ g.pending=null; resolveRaid(pend); releaseGuards(); } else raidHeld(ev,'shoo'); }
   dirty=true; return true; }
 function openCache(){ const c=g.cache; if(!cacheReady())return; const f=c.fill, xp=Math.round(40+80*f), mat=Math.round(30+60*f);
   let over=0; const got={}; for(const r of ['food','wood']){ const room=Math.max(0,storage()-(g.res[r]||0)); over+=Math.max(0,mat-room); got[r]=Math.round(Math.min(mat,room)); g.res[r]=Math.min(storage(),(g.res[r]||0)+mat); }   /* rounded: the card printed 0.9066386601577108 wood (v55, Nadia) */
@@ -2733,7 +2795,9 @@ function fetchShort(t,p){   // a short material with nobody on its job: move one
   const pool=g.roster.filter(b=>b.job===from).sort((a,b)=>(a.xp[from]||0)-(b.xp[from]||0)); if(!pool.length)return;
   pool[0].job=job; syncCounts(); lastFetch=performance.now(); try{ jobSel=job; }catch(e){}
   const J=JOBS.find(j=>j.id===job); fxText(p[0],p[1]-10,'A beaver goes '+(job==='stone'?'hauling stone':job==='mud'?'digging mud':'chopping wood')+'!'); dirty=true; }
+function lastWallMine(){ return g.river>=2&&!g.complete&&g.sections.length===river().width-1; }   // v58: from river 3 the dam's closing wall is the player's click (round thirty-one, Elena)
 function autoBuild(){
+  if(lastWallMine()){ if(wallNow()){ const p=hintAt||[W/2,geom().damY-40]; fxText(p[0],p[1]-10,'The last wall is yours: '+tapWord()+' the river!','#ffe27a'); } return false; }
   const t=SECTION_TYPES[g.nextType], k0=wallNow();
   if(!k0){ if(wallTooWeak(g.nextType)){ const hold=holdingWall(); if(hold)g.nextType=hold; } fetchShort(SECTION_TYPES[g.nextType],hintAt||[W/2,geom().damY-40]); return false; }
   const p=hintAt||[W/2,geom().damY-40]; let ok=false; autoActing=true; try{ ok=placeWall(k0); }finally{ autoActing=false; }
@@ -2746,7 +2810,7 @@ function autoBuildWanted(){ return quickBuildOn()&&(g.river===0||!!wallNow()); }
 // never sees "Click the river to build!" again (Nadia P2: it bobbed over rivers 3-7 for a 200-click player). The
 // auto-build clock keeps its own test so a passive player still gets a wall.
 let autoWallAt=0;   // WP16: when the clan last placed a wall by itself (autoBuild / catch-up): no "Click the river to build!" over the clan's own building on rivers 2+ (v56, Elena 4)
-function hintWanted(){ return autoBuildWanted()&&!(g.river>=2&&(g.helps||0)>=10)&&!(g.river>=1&&performance.now()-autoWallAt<10000); }
+function hintWanted(){ return autoBuildWanted()&&(lastWallMine()||!(g.river>=2&&(g.helps||0)>=10))&&!(g.river>=1&&performance.now()-autoWallAt<10000); }
 function hudBusy(){ return !!(lvlSplash||raidPillOn()); }   // no hint or help bubble while a card or the raid pill is up (WP12)
 // 'click' with a mouse, 'tap' on touch - the layout (drawer or not) says nothing about which one is in the player's hand
 function tapWord(){ try{ return matchMedia('(pointer:fine)').matches?'click':'tap'; }catch(e){ return 'tap'; } }
@@ -2933,7 +2997,7 @@ function settingsHtml(){
       '<p class="row">'+(Ads.isPremium()?'':(Ads.canBuy()?'<button onclick="Ads.buyPremium()">Remove ads · '+Ads.priceText()+'</button>':'')+'<button class="small" onclick="Ads.restore()">Restore purchase</button>')+(Ads.canEditConsent()?'<button class="small" onclick="Ads.editConsent()">Ad privacy choices</button>':'')+'</p>')+
     '<h2>Game</h2><p class="row"><button class="small" onclick="rerollClan()">Rename clan ('+(g.clan||'')+')</button><button class="small" onclick="showSettings=false;g.seenHelp=false;dirty=true">How to play</button><button class="small" onclick="ask(&quot;This colony and its save are gone for good.&quot;,function(){newGame();g.seenHelp=true;showSettings=false;dirty=true;},&quot;Start a new clan&quot;)">New clan</button></p>'+
     '<h2>About</h2><p class="note"><span id="ver" onclick="verTap()">Dam Clan version '+VERSION+'</span>. Made by Prism Bear Group Ltd, Berkhamsted, England. '+(PORTAL==='crazygames'?'Progress saves to your CrazyGames account when you are signed in, and to this browser otherwise.':'Progress autosaves '+(window.Native?'on this device':'in this browser')+'; nothing leaves it except anonymous play statistics and ad requests.')+'</p>'+
-    (PORTAL==='crazygames'?'<p class="note"><a href="'+PRIVACY_URL+'" target="_blank">Privacy policy</a></p>'
+    (Portal.cg||Portal.gd?'<p class="note"><a href="'+PRIVACY_URL+'" target="_blank">Privacy policy</a></p>'   /* CrazyGames and GameDistribution: no links out of the game but the privacy policy (WP17) */
       :'<p class="note">Stuck, found a bug, or want to say hello: <a href="mailto:'+SUPPORT_EMAIL+'?subject=Dam%20Clan%20'+VERSION+'" target="_blank">'+SUPPORT_EMAIL+'</a><br>'+(PORTAL?'':'<a href="'+SITE_URL+'" target="_blank">damclan.prismbeargroup.com</a> · ')+'<a href="'+PRIVACY_URL+'" target="_blank">Privacy policy</a></p>')+
     '<div class="btns"><button class="primary" id="btn-start">Back to the river</button></div></div>';
 }
@@ -4184,7 +4248,7 @@ function frame(now){
 Ads.init();
 // CrazyGames: the SDK's Data module is the save store for logged-in players, and it is only there once the SDK has
 // initialised, so the clock waits for it (or 4 s) and the save is re-read from it before the first day ticks.
-let portalHold=!!(PORTAL==='crazygames');
+let portalHold=!!(PORTAL==='crazygames'||PORTAL==='gamedistribution');   // GD too (WP17): the splash comes down and the pre-roll arms only once the SDK has answered or 4 s have passed
 // Preferences are read at parse time, long before the SDK can be up. Once the store is settled they are
 // re-read from it, otherwise a logged-in player's settings would read from one store and write to another.
 function reloadPrefs(){ try{
@@ -4194,7 +4258,7 @@ function reloadPrefs(){ try{
     noFlash=LS.getItem('damclan-noflash')==='1';
     toastsOn=LS.getItem('damclan-toasts')==='1';
   }catch(e){} }
-if(portalHold)Portal.init().then(()=>crewReady(1200)).then(()=>{ Portal.migrate(); LS.lock(); if(Portal.ready&&Portal.sdk.data&&!load())newGame(); awayReport=catchUp(); try{ dailyGift(); }catch(e){ console.error('dailyGift',e); } reloadPrefs(); portalHold=false; Portal.loaded(); if(window.__cgDone)window.__cgDone(); dirty=true; });
+if(portalHold)Portal.init().then(()=>crewReady(1200)).then(()=>{ Portal.migrate(); LS.lock(); if(Portal.cg&&Portal.ready&&Portal.sdk.data&&!load())newGame(); awayReport=catchUp(); try{ dailyGift(); }catch(e){ console.error('dailyGift',e); } reloadPrefs(); portalHold=false; Portal.loaded(); if(window.__cgDone)window.__cgDone(); dirty=true; });
 else LS.lock();
 if(!load())newGame();
 if(loadNote)log(loadNote,'warn');
