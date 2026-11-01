@@ -1,5 +1,10 @@
 <meta charset="utf-8">
 <title>Dam Clan</title>
+<script id="dcbeacon">/* 1 Nov 2026 (revival Phase 0): the page-open beacon (its own id: the headless tools take the game from the first bare script tag), sent before the 4 MB game parses: CrazyGames counts conversion from page visits, our session_start only from games that booted. The build scripts stamp BP (the portal: play, site or a portal name) and the version; the rules match Track in the game: dev plays, GameDistribution and Playgama send nothing. */
+(function(){ try{ var BP='site', V='0.43.0'; if(BP==='gamedistribution'||BP==='playgama')return; var app=BP==='play'; if(!/[?&]track=1/.test(location.search)&&!app&&(!/^https?:$/.test(location.protocol)||/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)))return;
+  var src=(location.search.match(/[?&]src=([a-z0-9_-]{1,12})/i)||[])[1], touch=('ontouchstart' in window)||navigator.maxTouchPoints>0, co='a'; try{ co=localStorage.getItem('damclan-cohort'); if(co!=='a'&&co!=='b'){ co=Math.random()<0.5?'a':'b'; localStorage.setItem('damclan-cohort',co); } }catch(e){ co='a'; }
+  var body=JSON.stringify([{v:V+co+(touch?'t':''),portal:(BP||'web')+(src?'/'+src.toLowerCase():''),name:'page',ss:0,w:innerWidth,h:innerHeight,portrait:innerHeight>innerWidth?1:0}]), u='https://damclan-telemetry.fragrant-salad-9163.workers.dev/e';
+  if(navigator.sendBeacon)navigator.sendBeacon(u,new Blob([body],{type:'text/plain'})); else fetch(u,{method:'POST',body:body,keepalive:true}).catch(function(){}); }catch(e){} })();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
 @font-face{font-family:'Lilita One';font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,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) format('woff2')}
@@ -114,6 +119,11 @@ button.lock{opacity:.45;filter:grayscale(.7);cursor:not-allowed}   /* 4x until c
 /* WP7 quick-buy strip (v55, Marcus move 2): up to three one-click buys inside the gauge, so the raid pill and the
    level card - both placed off the gauge's bottom edge - clear it without knowing it exists. Folding never hides it. */
 #gauge .qb{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+/* 0.43.0 (revival Phase 1): the first river is a focus mode. No prices, menus or stats before the loop has been seen once (Robot Ate My City's
+   PLAYBOOK): the job bar, Build/Research/Clan, the speed row, the level bar and the stores wait for river 2. Wood stays: it is what a wall costs. */
+#app.focus #s-day,#app.focus #s-lvl,#app.focus #s-food,#app.focus #s-mud,#app.focus #s-stone,#app.focus #s-sci,#app.focus #s-pop{display:none}
+#app.focus .speed button:not(#btn-settings):not(#btn-mute){display:none}
+#app.focus #actions,#app.focus #damstat,#app.focus #jobbar,#app.focus #tabs,#app.focus #tab,#app.focus #gauge .qb{display:none}
 #gauge .qb button{min-height:26px;padding:2px 8px;font-size:11.5px;border-radius:7px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;line-height:1.1}
 #gauge .qb button small{font-size:10.5px;font-weight:800;opacity:.9;display:inline-flex;align-items:center;gap:2px} #gauge .qb button small svg{width:11px;height:11px}
 #gauge .qb button.yes{animation:qbglow 1.6s ease-in-out infinite}
@@ -334,6 +344,7 @@ body.asking #panel,body.asking #jobbar,body.asking #actions,body.asking .speed{p
 }
 @media (pointer:coarse){ .kb{display:none} #gauge .qb button{min-height:32px} button.small{min-height:44px;min-width:44px} .speed button{width:44px;min-width:44px;min-height:44px} #tabs button{min-height:44px} .actions button.small{width:48px;min-width:48px;min-height:48px} }
 #panel,.tab-body,.damstat,#tutorial{overflow-x:hidden;overflow-wrap:anywhere}
+@media (pointer:coarse) and (max-width:1100px) and (max-height:560px) and (orientation:landscape){ .speed{top:46px;bottom:auto;left:4px;right:auto} .speed button{width:36px;min-width:36px;min-height:36px} }   /* 0.43.0: touch only: under the river ladder, top left; bottom right it covered the right third of the dam and ate the taps there (the touch audit, 844x390). A mouse keeps bottom right: top left hid the builders in the 800x450 frame (matrix cg800) */   /* 0.43.0: a short landscape phone has a 200 px scene; 44 px buttons in a row of seven ran over the beavers */
 @media (prefers-reduced-motion:reduce){ .banner,.pill,#gauge,.overlay{backdrop-filter:none} #gauge .track i.hold{animation:none} }
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -441,11 +452,18 @@ const LS={ _s:null,
   // Newgrounds (Dave, round eleven). The game plays from memory then; it just cannot remember.
   _mem:{m:{},getItem(k){return k in this.m?this.m[k]:null},setItem(k,v){this.m[k]=String(v)},removeItem(k){delete this.m[k]}},
   _p(){ if(this._s)return this._s; try{ if(typeof Portal!=='undefined'&&PORTAL==='crazygames'&&Portal.ready&&Portal.sdk&&Portal.sdk.data)return Portal.sdk.data; }catch(e){}
+    try{ if(typeof Portal!=='undefined'&&Portal.pgStore)return PGStore; }catch(e){}
     try{ const ls=localStorage; ls.getItem('damclan-probe'); return ls; }catch(e){ return this._mem; } },
   // Boot latches the store once it knows whether the SDK arrived. Without this a slow SDK (the 4 s
   // timeout fires first) left the session reading localStorage and writing the Data module.
   lock(){ this._s=this._p(); return this._s; },
   getItem(k){ return this._p().getItem(k); }, setItem(k,v){ this._p().setItem(k,v); }, removeItem(k){ this._p().removeItem(k); } };
+// Playgama (30 Oct 2026): every save goes through bridge.storage in one call, so all the keys travel as one JSON value under 'damclan',
+// read before the clock starts and written a second after the last change (at once when the tab hides)
+const PGStore={ m:{}, t:null, getItem(k){ return Object.prototype.hasOwnProperty.call(this.m,k)?this.m[k]:null; },
+  setItem(k,v){ this.m[k]=String(v); this.later(); }, removeItem(k){ delete this.m[k]; this.later(); },
+  later(){ clearTimeout(this.t); this.t=setTimeout(()=>this.flush(),1000); },
+  flush(){ clearTimeout(this.t); this.t=null; try{ Portal.sdk.storage.set(['damclan'],[JSON.stringify(this.m)]).catch(()=>{}); }catch(e){} } };
 // every key the game owns, so a CrazyGames build can copy them into the Data module on first run there
 const LS_KEYS=['dam-nation-save-v1','dam-nation-save-v1-backup','dam-nation-premium','damclan-mute','damclan-music','damclan-reviewed','damclan-best','damclan-ach','damclan-cam','damclan-gauge','damclan-noflash','damclan-toasts','damclan-speed'];
 
@@ -769,7 +787,7 @@ const BASE_STORAGE=150, DAY_MS=1500, SAVE_KEY='dam-nation-save-v1', SAVE_BAK='da
 //  the app build swaps in AdMob + RevenueCat without touching game code.
 // =====================================================================
 const PREMIUM_KEY='dam-nation-premium';
-const VERSION='0.42.0';
+const VERSION='0.43.0';
 const AD_AFTER_DAMS=1, BUY_AFTER_DAMS=2;   // rivers dammed before the first ad, and before the offer
 const REVIEW_AFTER_DAMS=2, REVIEW_KEY='damclan-reviewed';
 function maybeAskReview(){ // Play's own sheet, once per install, on the dammed screen of the second river - before the ad, never after it
@@ -793,7 +811,51 @@ function verTap(){ if(++verTaps<5)return; verTaps=0;
   if(PORTAL){ console.log(txt); return; }   // a native alert() inside a portal iframe is rough UX
   try{ alert(txt); }catch(e){ console.log(txt); } }
 // Analytics: named events through the native bridge (Firebase in the app); a no-op on the web and in the demo.
-const track=(name,params)=>{ try{ if(!DEMO&&typeof window!=='undefined'&&window.Native&&window.Native.track)window.Native.track(name,params||{}); }catch(e){} };
+const track=(name,params)=>{ try{ if(!DEMO&&typeof window!=='undefined'&&window.Native&&window.Native.track)window.Native.track(name,params||{}); }catch(e){} try{ Track.ev(name,params); }catch(e){} };
+// Our own anonymous counts (1 Nov 2026, the revival's Phase 0; carried over from Robot Ate My City): the Cloudflare Worker in
+// telemetry/ keeps daily counters per build and portal, no IDs, no cookies, no IP stored. Read with `node tools/daily.js`.
+// The build carries 't' on a touch device; the portal carries '/<src>' when the link had ?src=<word> (a cohort tag, never a person).
+// Dev plays (localhost, file:, the headless tools, which have no http location) stay out unless ?track=1. Capacitor serves the app
+// from https://localhost, which is the app, not a dev play. GameDistribution gets nothing (their rule); Playgama gets the events
+// through its Bridge's analytics module only (their rule 1.2.4 forbids outside analytics).
+const TELEMETRY_URL='https://damclan-telemetry.fragrant-salad-9163.workers.dev';
+const IS_APP=typeof location!=='undefined'&&location.protocol==='https:'&&location.hostname==='localhost';
+const TRACK_PORTAL=(PORTAL||(IS_APP?'play':DEMO?'site':'web'))+(()=>{ try{ const m=/[?&]src=([a-z0-9_-]{1,12})/i.exec(location.search||''); return m?'/'+m[1].toLowerCase():''; }catch(e){ return ''; } })();
+const DEV_PLAY=(()=>{ try{ if(PORTAL==='gamedistribution')return true; if(/[?&]track=1/.test(location.search||''))return false; if(IS_APP)return false;
+  return !/^https?:$/.test(location.protocol||'')||/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname||''); }catch(e){ return true; } })();
+// 0.43.0: an A/B cohort per browser ('a' or 'b', kept in localStorage), carried on the build tag ('0.43.0a', '0.43.0bt') so every count splits by it.
+// a: the first river's stuck-player hint at 3 s of play; b: at HINT_AT (6 s), as in 0.42.0.
+const COHORT=(()=>{ try{ if(PORTAL==='playgama')return Math.random()<0.5?'a':'b';   /* Playgama: no localStorage writes outside the Bridge (their 3.2.1), so a cohort per session there */
+  let c=localStorage.getItem('damclan-cohort'); if(c!=='a'&&c!=='b'){ c=Math.random()<0.5?'a':'b'; localStorage.setItem('damclan-cohort',c); } return c; }catch(e){ return 'a'; } })();
+const Track={ q:[], t0:null, timer:null, sent:false, did:{}, taps:0, hand:0, vis:0,
+  now(){ return (typeof performance!=='undefined'&&performance.now)?performance.now():0; },
+  ss(){ return this.t0==null?0:Math.round((this.now()-this.t0)/1000); },
+  portrait(){ try{ return innerHeight>innerWidth?1:0; }catch(e){ return 0; } },
+  touch(){ try{ return ('ontouchstart' in window)||navigator.maxTouchPoints>0; }catch(e){ return false; } },
+  once(name,data){ if(this.did[name])return; this.did[name]=true; this.ev(name,data); },
+  ev(name,data){ const e={v:VERSION+COHORT+(this.touch()?'t':''),portal:TRACK_PORTAL,ss:this.ss(),name,...(data||{})};
+    if(PORTAL==='playgama'){ this.pg(e); return; }
+    if(DEV_PLAY)return; this.q.push(e); if(this.q.length>400)this.q.splice(0,this.q.length-400);
+    const now=name==='quit'||name==='bye'; if(now){ this.flush(); return; }
+    if(!this.timer)this.timer=setTimeout(()=>this.flush(),this.sent?60000:4000); },   /* the first send at 4 s, then a minute apart; a hidden tab sends at once */
+  pg(e){ try{ const b=Portal.pg&&Portal.ready&&Portal.sdk; if(!(b&&b.analytics&&b.analytics.send))return; const d={build:e.v}; for(const k in e){ const v=e[k]; if(k!=='name'&&k!=='v'&&k!=='portal'&&(typeof v==='number'||typeof v==='string'||typeof v==='boolean'))d[k]=v; } b.analytics.send(e.name,d); }catch(err){} },
+  flush(){ clearTimeout(this.timer); this.timer=null; if(DEV_PLAY||!this.q.length)return; this.sent=true;
+    while(this.q.length){ let n=0, len=2; while(n<this.q.length&&n<50&&len+JSON.stringify(this.q[n]).length+1<7500){ len+=JSON.stringify(this.q[n]).length+1; n++; }
+      const body=JSON.stringify(this.q.splice(0,Math.max(1,n)));
+      try{ if(navigator.sendBeacon)navigator.sendBeacon(TELEMETRY_URL+'/e',new Blob([body],{type:'text/plain'})); else fetch(TELEMETRY_URL+'/e',{method:'POST',body,keepalive:true}).catch(()=>{}); }catch(err){} } },
+  // first visit of a calendar day: gap 0 a first ever, 1 the next day (our D1), more = days since the last visit
+  day(){ try{ const KEY='damclan-tday', today=Math.floor(Date.now()/864e5), last=+(LS.getItem(KEY)||0); if(last===today)return; LS.setItem(KEY,String(today)); this.ev('day',{gap:last?today-last:0}); }catch(e){} },
+  start(){ if(this.t0!=null)return; this.t0=this.now(); this.ev('session_start',{load:Math.round(this.t0),w:innerWidth,h:innerHeight,touch:this.touch()?1:0,portrait:this.portrait()}); this.day();
+    // alive_<s>: still on the page, visible, at s seconds of visible play; reached_60s needs a first tap too (CrazyGames' conversion)
+    setInterval(()=>{ if(document.visibilityState==='hidden')return; this.vis++; const v=this.vis;
+      if(v===15||v===30||v===120||v===180||v===360||v===600)this.ev('alive_'+v);
+      if(v>=60&&this.did.first_tap&&!this.did.reached_60s)this.once('reached_60s'); },1000);
+    addEventListener('pointerdown',()=>{ this.taps++; this.once('first_tap',{t:this.ss()}); },{capture:true,passive:true});
+    const bye=()=>{ const s=this.ss(); this.ev('bye',{s,prev:this.byeS||0}); this.byeS=s; };
+    const quit=()=>{ if(this.did.quit)return; this.did.quit=true; let st={}; try{ st={river:g.river,walls:g.sections.length,hand:this.hand,dams:g.damsBuilt||0,tut:Math.min(9,g.tut||0),day:g.day}; }catch(e){}
+      this.ev('quit',{...st,taps:this.taps,portrait:this.portrait()}); };
+    addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ quit(); bye(); } });   /* quit is once a session: where the player was when they first left */
+    addEventListener('pagehide',()=>{ quit(); bye(); }); } };
 const Ads={
   provider:'mock', premium:false, lastInterstitial:-1e9, MIN_GAP_MS:180000,
   init(){ try{ this.premium=LS.getItem(PREMIUM_KEY)==='1'; }catch(e){}
@@ -847,30 +909,40 @@ const Portal={
   // until an ad has demonstrably played.
   adsOk:null,
   // WP17: two SDKs behind one bridge. cg = CrazyGames (SDK v3, Data-module saves, gameplay markers). gd =
-  // GameDistribution: build-portal.js loads their SDK from <head> with GD_OPTIONS.onEvent queueing every event
+  // GameDistribution: build-portal.js loads their SDK in the document head with GD_OPTIONS.onEvent queueing every event
   // into window.__gdEv until this script has parsed and installs window.__gdOn. Saves stay on localStorage (GD has
   // no save module, so LS never looks at Portal.sdk here). Ads are gdsdk.showAd(): their rules want a pre-roll on
   // the first input (never before input), mid-rolls at natural breaks (ours: between rivers), the game paused
   // AND muted for the whole of SDK_GAME_PAUSE..SDK_GAME_START, and no outbound links (the About block matches).
-  cg:PORTAL==='crazygames', gd:PORTAL==='gamedistribution',
+  cg:PORTAL==='crazygames', gd:PORTAL==='gamedistribution', pg:PORTAL==='playgama',
   // resolves when the SDK is initialised, or after 4 s without it (the game then runs ad-free on localStorage)
-  init(){ return new Promise(res=>{ if(!this.cg&&!this.gd)return res(); let done=false; const end=()=>{ if(!done){done=true;res();} }; setTimeout(end,4000);
+  init(){ return new Promise(res=>{ if(!this.cg&&!this.gd&&!this.pg)return res(); let done=false; const end=()=>{ if(!done){done=true;res();} }; setTimeout(end,this.pg?8000:4000);
+      if(this.pg){ this.pgInit(end); return; }
       if(this.gd){ this._gdEnd=end; window.__gdOn=ev=>this.gdEvent(ev); const q=window.__gdEv||[]; window.__gdEv=[]; q.forEach(ev=>this.gdEvent(ev));
         for(const ev of ['pointerup','mouseup','touchend','click','keyup'])addEventListener(ev,()=>this.gdInput(),true); return; }   /* every input kind: a real click reached the canvas but not the pointerup-only listener on their revision host (4 Oct) */   // ready latches whenever SDK_READY lands, even after the 4 s
       const go=()=>{ try{ this.sdk=window.CrazyGames&&window.CrazyGames.SDK; if(!this.sdk)return end(); Promise.resolve(window.__cgInit||this.sdk.init()).then(()=>{ this.ready=true; try{ if(!window.__cgLoading)this.sdk.game.loadingStart(); }catch(e){} this.watchSettings(); end(); }).catch(end); }catch(e){ end(); } };
       if(window.CrazyGames)return go();   // build-portal.js puts the SDK tag before the first meta so it loads while the 10 MB body parses
       const s=document.createElement('script'); s.src='https://sdk.crazygames.com/crazygames-sdk-v3.js'; s.onload=go; s.onerror=end; document.head.appendChild(s); }); },
-  loaded(){ if(this.ready&&this.cg)try{ this.sdk.game.loadingStop(); }catch(e){} },
+  loaded(){ if(this.ready&&this.cg)try{ this.sdk.game.loadingStop(); }catch(e){} if(this.ready&&this.pg)try{ this.sdk.platform.sendMessage('game_ready'); }catch(e){} },
+  // Playgama Bridge: build-portal.js puts its script in the document head; initialize, follow the platform's audio and pause, route the ad states,
+  // then read the save. A Bridge that never answers leaves the game on localStorage and ad-free, as the other portals do.
+  pgInit(end){ const b=window.bridge; if(!b)return end(); b.initialize().then(()=>{ this.sdk=b; this.ready=true; const E=b.EVENT_NAME;
+      try{ this.pgAudio=!!b.platform.isAudioEnabled; portalMute=!this.pgAudio; Sfx.applyMute(); b.platform.on(E.AUDIO_STATE_CHANGED,on=>{ if(!this.gdPaused){ portalMute=!on; Sfx.applyMute(); } this.pgAudio=on; }); }catch(e){}
+      try{ b.platform.on(E.PAUSE_STATE_CHANGED,p=>{ if(p)this.gdPause(); else this.gdResume(); }); }catch(e){}
+      try{ b.advertisement.on(E.INTERSTITIAL_STATE_CHANGED,s=>{ if(this.pgI)this.pgI(s); }); b.advertisement.on(E.REWARDED_STATE_CHANGED,s=>{ if(this.pgR)this.pgR(s); }); }catch(e){}
+      addEventListener('visibilitychange',()=>{ if(document.hidden&&PGStore.t)PGStore.flush(); });
+      b.storage.get(['damclan']).then(d=>{ try{ const o=d&&d[0]?(typeof d[0]==='string'?JSON.parse(d[0]):d[0]):null; if(o&&typeof o==='object')PGStore.m=o; }catch(e){} this.pgStore=true; end(); },()=>end()); },()=>end()); },
   // The portal owns the mute switch in its own chrome and requires the game to follow it.
   watchSettings(){ try{ const apply=st=>{ if(!st)return; portalMute=!!st.muteAudio; Sfx.applyMute(); };
       apply(this.sdk.game.settings); if(this.sdk.game.addSettingsChangeListener)this.sdk.game.addSettingsChangeListener(apply); }catch(e){} },
   // First run on CrazyGames: carry an existing localStorage colony into the Data module rather than losing it.
-  migrate(){ if(!this.cg||!this.ready||!this.sdk||!this.sdk.data)return; try{ for(const k of LS_KEYS){ const v=localStorage.getItem(k); if(v!=null&&this.sdk.data.getItem(k)==null)this.sdk.data.setItem(k,v); } }catch(e){} },
-  hasAds(){ if(this.gd)return this.ready&&!!(this.sdk&&this.sdk.showAd); return this.cg&&this.ready&&this.adsOk!==false; },
-  hasRewarded(){ if(this.gd)return this.ready&&this.gdRewarded===true; return this.cg&&this.ready&&this.adsOk===true; },   // GD: only once preloadAd('rewarded') has one (needs the Rewarded flag in their portal)
+  migrate(){ if(this.pg&&this.pgStore){ try{ if(!Object.keys(PGStore.m).length){ for(const k of LS_KEYS){ const v=localStorage.getItem(k); if(v!=null)PGStore.m[k]=v; } if(Object.keys(PGStore.m).length)PGStore.later(); } }catch(e){} return; }
+    if(!this.cg||!this.ready||!this.sdk||!this.sdk.data)return; try{ for(const k of LS_KEYS){ const v=localStorage.getItem(k); if(v!=null&&this.sdk.data.getItem(k)==null)this.sdk.data.setItem(k,v); } }catch(e){} },
+  hasAds(){ if(this.pg)return this.ready&&!!this.sdk.advertisement.isInterstitialSupported&&this.adsOk!==false; if(this.gd)return this.ready&&!!(this.sdk&&this.sdk.showAd); return this.cg&&this.ready&&this.adsOk!==false; },
+  hasRewarded(){ if(this.pg)return this.ready&&!!this.sdk.advertisement.isRewardedSupported&&this.pgRewardOff!==true; if(this.gd)return this.ready&&this.gdRewarded===true; return this.cg&&this.ready&&this.adsOk===true; },   // GD: only once preloadAd('rewarded') has one (needs the Rewarded flag in their portal)
   // 'adsDisabledBasicLaunch' is the portal telling us ads are off for this stage of the launch
   _adErr(e){ const c=String((e&&(e.code||e.error))||e||''); if(/adsDisabled|Disabled/i.test(c))this.adsOk=false; },
-  gameplay(on){ if(!this.ready||!this.cg)return; try{ on?this.sdk.game.gameplayStart():this.sdk.game.gameplayStop(); }catch(e){} },
+  gameplay(on){ if(this.ready&&this.pg){ try{ this.sdk.platform.sendMessage(on?(this.pgStarted?'level_resumed':'level_started'):'level_paused'); this.pgStarted=true; }catch(e){} return; } if(!this.ready||!this.cg)return; try{ on?this.sdk.game.gameplayStart():this.sdk.game.gameplayStop(); }catch(e){} },
   // GameDistribution events, in the order their docs give them. SDK_GAME_PAUSE arrives when a video is about to
   // cover the game (adsOk: an ad has demonstrably played); SDK_GAME_START when it is done. Both are idempotent with
   // the showAd() promise, so whichever lands first wins and the other is a no-op.
@@ -880,15 +952,19 @@ const Portal={
     else if(n==='SDK_GAME_START')this.gdResume();
     else if(n==='SDK_REWARDED_WATCH_COMPLETE')this.gdWatched=true; },
   gdPause(){ if(this.gdPaused||typeof g==='undefined'||!g)return; this.gdPaused=true; this.inAd=true; this.gdSpeed=g.speed; g.speed=0; portalMute=true; Sfx.applyMute(); },
-  gdResume(){ if(!this.gdPaused)return; this.gdPaused=false; this.inAd=false; portalMute=false; Sfx.applyMute(); if(g.speed===0)g.speed=this.gdSpeed||1; dirty=true; },
+  gdResume(){ if(!this.gdPaused)return; this.gdPaused=false; this.inAd=false; portalMute=this.pg&&this.pgAudio===false; Sfx.applyMute(); if(g.speed===0)g.speed=this.gdSpeed||1; dirty=true; },
   gdPreload(){ this.gdRewarded=null; try{ if(this.sdk&&this.sdk.preloadAd)this.sdk.preloadAd('rewarded').then(()=>{ this.gdRewarded=true; dirty=true; },()=>{ this.gdRewarded=false; }); else this.gdRewarded=false; }catch(e){ this.gdRewarded=false; } },
   // their rule: the pre-roll sits behind the first mouseUp/touchUp after SDK_READY, once, and never before input
   gdInput(){ if(!this.gd||!this.ready||this.gdPrerolled||portalHold)return; this.gdPrerolled=true; this.interstitial('preroll'); },
   interstitial(pos){ return new Promise(res=>{ if(!this.ready)return res(); let done=false;
+    if(this.pg){ let seen=false; const end=()=>{ if(!done){done=true;this.pgI=null;this.gdResume();res();} }; this.pgI=s=>{ if(s==='loading'||s==='opened')seen=true; if(s==='opened'){ this.adsOk=true; this.gdPause(); } else if(s==='closed'||s==='failed')end(); };
+      try{ this.sdk.advertisement.showInterstitial('between_rivers'); }catch(e){ end(); } setTimeout(()=>{ if(!seen)end(); },4000); setTimeout(end,90000); return; }   /* nothing within 4 s (the Bridge's own pacing said no) = move on */
     if(this.gd){ const end=()=>{ if(!done){done=true;this.gdResume();res();} }; this.gdPause(); try{ const p=this.sdk.showAd('interstitial',{position:pos||'midroll'}); if(p&&p.then)p.then(end,end); else end(); }catch(e){ end(); } setTimeout(end,90000); return; }
     this.inAd=true; if(this.playing){ this.playing=false; this.gameplay(false); } const end=()=>{ if(!done){done=true;this.inAd=false;res();} };
     let started=false; try{ this.sdk.ad.requestAd('midgame',{adFinished:end,adError:e=>{ this._adErr(e); end(); },adStarted:()=>{ this.adsOk=true; started=true; }}); }catch(e){ end(); } setTimeout(()=>{ if(!started)end(); },6000); setTimeout(end,45000); }); },   /* no ad inside 6 s = move on: the march sat 6-8 s dead (v56-v57, Dave) */
   rewarded(){ return new Promise(res=>{ if(!this.ready)return res(false); let done=false;
+    if(this.pg){ let got=false, seen=false; const end=ok=>{ if(!done){done=true;this.pgR=null;this.gdResume();res(ok);} }; this.pgR=s=>{ if(s==='loading'||s==='opened')seen=true; if(s==='opened')this.gdPause(); else if(s==='rewarded')got=true; else if(s==='closed')end(got); else if(s==='failed'){ this.pgRewardOff=true; end(false); } };
+      try{ this.sdk.advertisement.showRewarded('boost'); }catch(e){ end(false); } setTimeout(()=>{ if(!seen){ this.pgRewardOff=true; end(false); } },6000); setTimeout(()=>end(false),120000); return; }   /* the reward only on the Bridge's 'rewarded' state */
     if(this.gd){ this.gdWatched=false; const end=ok=>{ if(!done){done=true;this.gdResume();this.gdPreload();res(ok);} }; this.gdPause(); try{ this.sdk.showAd('rewarded').then(()=>setTimeout(()=>end(!!this.gdWatched),50),()=>end(false)); }catch(e){ end(false); } setTimeout(()=>end(false),120000); return; }   // reward only on SDK_REWARDED_WATCH_COMPLETE, never on a rejection
     this.inAd=true; if(this.playing){ this.playing=false; this.gameplay(false); } const end=ok=>{ if(!done){done=true;this.inAd=false;res(ok);} };
     try{ this.sdk.ad.requestAd('rewarded',{adFinished:()=>end(true),adError:e=>{ this._adErr(e); end(false); },adStarted:()=>{ this.adsOk=true; }}); }catch(e){ end(false); } setTimeout(()=>end(false),90000); }); },
@@ -1136,6 +1212,7 @@ const holdNeed=()=>g.river===0?9:g.river<=3?10+3*g.river:HOLD_LATE[Math.min(3,g.
 // The first dam: weather still batters the wall (the player sees it tested) but never costs pond water. A storm
 // in the hold pushed an engaged player's first win from ~27 s to ~51 s - onto CrazyGames' one-minute line (0.36 gate).
 const firstDam=()=>g.river===0&&!g.damsBuilt;
+const focusMode=()=>!!g&&firstDam()&&!g.lost;   /* 0.43.0: the first river's focus mode (CSS #app.focus) */
 // WP14: on rivers 5-8 a wreck, breach or crew costs the pond a quarter of its days and the count pauses (g.holdSt) until the
 // wall is whole; on rivers 1-4 the pond drains as before (a breach never lands into a filling pond there anyway).
 function holdHit(msg){ if(g.river>=4&&g.hold>0){ g.hold=Math.max(0,g.hold*0.75); g.holdSt=1; log((msg||'The pond holds at')+' '+Math.floor(g.hold)+'/'+holdNeed()+' days while the builders mend the wall.','warn'); } else g.hold=0; }
@@ -1150,7 +1227,7 @@ function mults(){
   // The first river builds twice as fast. After the last gap was filled a perfect player waited 20-40 s with
   // nothing to do, and the win landed at ~45 s - on CrazyGames' one-minute line (round fifteen, all six).
   // Here rather than in simDay so the dam strip, the nudge and the bots all read the same rate.
-  if(g.river===0&&!g.damsBuilt)build*=2;
+  if(g.river===0&&!g.damsBuilt)build*=FIRST_BUILD;
   if(has('teeth'))wood*=1.5; if(has('trails'))food*=1.5; if(has('academy'))research*=1.5;
   if(s===0)food*=1.1;
   if(s===2){food*=1.2;wood*=1.2}
@@ -1222,7 +1299,8 @@ function simDay(){
   if(g.kitTimer>=Math.min(rule().kitDays||12,pondUp()?(has('nursery')?KIT_POND_NURSERY:KIT_POND):(has('nursery')?8:12))){ g.kitTimer=0; if(g.res.food>g.beavers*4&&clanSize()<housing()&&g.morale>=60){ { const job=neediestJob(); addBeaver(job); st().kits=(st().kits||0)+1; gainXp(10); g.kitSeen=g.day; Sfx.play('kit'); joined('A kit has grown up and',job); } } }
   // food
   g.res.food-=foodUse();
-  if(g.res.food<0){
+  if(g.res.food<0&&firstDam())g.res.food=0;   /* 0.43.0: nobody goes hungry on the first river */
+  else if(g.res.food<0){
     g.res.food=0; g.starving++;
     if(g.starving===1)log('Food has run out. Hungry beavers work badly and will leave.','bad');
     if(g.starving%4===0&&g.beavers>1){removeBeavers(1);log('A hungry beaver went to find food elsewhere.','bad')}
@@ -1292,7 +1370,7 @@ function simDay(){
   // nothing, so the game never showed them what it is about (round seven, Marcus: 6 of 24 seeds).
   // The first river now gets a gentle, guaranteed weather event once the wall is under way, so every
   // player sees the dam tested at least once before they are asked to care about it.
-  else if(Math.random()<Math.min(0.2,(g.river===0?0.10:0.04)*danger())){ startEvent(pickEvent()); g.cooldown=Math.max(1,4-Math.floor(g.river/2)); if(g.river>=4&&Math.random()<0.2)startEvent(pickEvent()); }
+  else if(!firstDam()&&Math.random()<Math.min(0.2,(g.river===0?0.10:0.04)*danger())){ startEvent(pickEvent()); g.cooldown=Math.max(1,4-Math.floor(g.river/2)); if(g.river>=4&&Math.random()<0.2)startEvent(pickEvent()); }
   // morale
   let target=60+(foodBalance()>=g.beavers*0.1?15:0)+(idle()>0?10:0)-(g.starving?40:0)-(active('storm')||active('drought')?10:0);
   g.morale=clamp(g.morale+clamp(target-g.morale,-2,2),0,100);
@@ -1573,6 +1651,7 @@ function addSection(){
   const t=SECTION_TYPES[g.nextType]; if(g.sections.length>=river().width||!canAfford(t.cost)){Sfx.play('buzz');return}
   if(wallTooWeak(g.nextType)){ Sfx.play('buzz'); toast('A '+t.name+' here would leave the dam short of '+river().req+'.','warn'); return; }
   pay(t.cost); pushSection({type:g.nextType,progress:0,hp:0,wrecked:false}); gainXp(3); firstAction('section'); dirty=true;
+  try{ if(!autoActing){ Track.hand++; Track.once('first_wall',{t:Track.ss(),river:g.river}); } if(g.river<3)Track.ev('wall',{hand:autoActing?0:1,river:g.river}); }catch(e){}   /* walls by hand or by the builders, first three rivers */
   try{ hintClock=0; }catch(e){}
   // The last slot filled: nothing left to do in this popup, and at 907x510 it covers ~85% of the
   // scene - the first win played out behind it (Sofia, round ten). Close it so the dam is in view.
@@ -1748,7 +1827,9 @@ function raidFocus(){
   jobSel='guard'; dirty=true;   // with a popup open too: it was skipped, and the phone kept Build selected (Priya)
   if(!isDrawer()&&activeTab!=='beavers')activeTab='beavers';
 }
+let focusWas=null;
 function renderUI(){
+  { const f=focusMode(), app=document.getElementById&&document.getElementById('app'); if(app&&app.classList&&f!==focusWas){ focusWas=f; app.classList.toggle('focus',f); try{ resize(); }catch(e){} } }
   syncTutorial(); raidFocus(); if(document.body&&document.body.classList)document.body.classList.toggle('raidwarn',!!g.pending);
   const R=river(), cap=storage();
   $('#s-day').innerHTML=ico('sun')+' <span class="lbl">Day </span>'+g.day+' <small>'+SEASONS[season()]+'</small>';
@@ -1874,7 +1955,7 @@ const TUT=[
   // forty days (Sofia, round eleven).
   // Once every gap is filled the tap is done: the text said "tap the +" for 12-21 s after there was no +
   // left, and Priya's reader clicked the dam 17 times for nothing (round thirteen).
-  {text:()=>g.sections.length>=river().width?(damReady()?'<b>Pack the dam!</b> '+tapWord()+' the wall: '+Math.floor(g.hold)+'/'+holdNeed()+' days of pond.':'<b>'+cap1(tapWord())+' the wall</b> to help the builders finish it ('+Math.round((g.sections.find(x=>x.progress<1)||{progress:1}).progress*100)+'%).'):(popupTab==='build'?'Press <b>Add Stick Wall</b> to fill the gaps':'Fill the gaps: '+tapWord()+' the <b>river</b> to add a Stick Wall')+(isDrawer()?'':' (or Add Stick Wall in the Build tab)')+'. Then hold the dam while the pond fills.', done:()=>g.sections.length>=river().width&&g.sections.every(x=>x.progress>=1), ok:()=>true, tab:null},
+  {text:()=>g.sections.length>=river().width?(damReady()?'<b>Pack the dam!</b> '+tapWord()+' the wall: '+Math.floor(g.hold)+'/'+holdNeed()+' days of pond.':'<b>'+cap1(tapWord())+' the wall</b> to help the builders finish it ('+Math.round((g.sections.find(x=>x.progress<1)||{progress:1}).progress*100)+'%).'):(popupTab==='build'?'Press <b>Add Stick Wall</b> to fill the gaps':(focusMode()?cap1(tapWord())+' the <b>river</b> to build your dam':'Fill the gaps: '+tapWord()+' the <b>river</b> to add a Stick Wall'))+(isDrawer()||focusMode()?'':' (or Add Stick Wall in the Build tab)')+(focusMode()?'.':'. Then hold the dam while the pond fills.'), done:()=>g.sections.length>=river().width&&g.sections.every(x=>x.progress>=1), ok:()=>true, tab:null},
 ];
 // Which step the strip is actually showing, or -1. A step whose control cannot be pressed is NOT
 // shown: the nudge takes over, because it is the one that knows how to say "your foragers cannot
@@ -2415,7 +2496,7 @@ function splashDur(){ const L=lvlSplash; return !L?0:L.alt?LVL_CHOICE_MS:L.kind=
 function lvlDismiss(){ const L=lvlSplash; if(!L||L.rects)return false; L.t0=Math.min(L.t0,performance.now()-splashDur()+500); dirty=true; return true; }   // WP16: a tap on a card without a choice lets it go (fade over the last 0.5 s)
 function drawLevelSplash(){
   if(!lvlSplash&&!lvlQueue.length)try{ maybeOfferResearch(); }catch(e){}
-  if(!lvlSplash){ if(!lvlQueue.length||firstMarch()||popupTab||showSettings||askBox||awayReport||g.complete||(typeof raidPillOn==='function'&&raidPillOn()&&!lvlQueue[0].prio)||(lvlQueue[0].lvl&&performance.now()-lastSplashEnd<20000))return;   /* a prio message (the Great Dam) is drawn below the pill, so it may show over the clock (v57, Sofia, Nadia) */   /* while the raid pill shows at all, clock included (v56, Nadia P1) */   /* never over the win banner or the raid pill's Guard button, and level cards 20 s apart (v55, Elena P1) */ { let it=lvlQueue.shift(); while(it&&it.lvl&&!it.kind&&!it.perk&&lvlQueue.some(q=>q.lvl>it.lvl&&!q.kind))it=lvlQueue.shift(); if(!it)return;   /* a perk card is the gift the player can see: never dropped, but queued perk cards merge into one (WP10) */
+  if(!lvlSplash){ if(!lvlQueue.length||firstMarch()||(focusMode()&&!g.complete)||popupTab||showSettings||askBox||awayReport||g.complete||(typeof raidPillOn==='function'&&raidPillOn()&&!lvlQueue[0].prio)||(lvlQueue[0].lvl&&performance.now()-lastSplashEnd<20000))return;   /* a prio message (the Great Dam) is drawn below the pill, so it may show over the clock (v57, Sofia, Nadia) */   /* while the raid pill shows at all, clock included (v56, Nadia P1) */   /* never over the win banner or the raid pill's Guard button, and level cards 20 s apart (v55, Elena P1) */ { let it=lvlQueue.shift(); while(it&&it.lvl&&!it.kind&&!it.perk&&lvlQueue.some(q=>q.lvl>it.lvl&&!q.kind))it=lvlQueue.shift(); if(!it)return;   /* a perk card is the gift the player can see: never dropped, but queued perk cards merge into one (WP10) */
      if(it.perk){ it.perks=[it.perk]; for(let k=0;k<lvlQueue.length;){ if(lvlQueue[k].perk){ it.perks.push(lvlQueue[k].perk); it.lvl=Math.max(it.lvl,lvlQueue[k].lvl); lvlQueue.splice(k,1); } else k++; } }
      // recheck the cards as they are shown: one could offer something already owned, and a tap did nothing (round twenty-five, Marcus)
      if(it.kind==='res'){ if(!it.r||!canResearch(it.r)){ const rec=recommendedResearch(); it.r=rec&&canResearch(rec)?rec:null; } if(it.alt&&(!canResearch(it.alt)||(it.r&&it.alt.id===it.r.id)))it.alt=researchSorted().find(x=>it.r&&x.id!==it.r.id&&canResearch(x))||null; if(!it.r||!it.alt)return; it.pick=it.r.id; }
@@ -2541,7 +2622,8 @@ function pokeRival(x,y){
     const strN=(g.pending&&g.pending.str)||g.raidStr||0, enough=strN>0&&guardDefence()>=strN, decided=!g.pending&&g.events.some(e=>e.type==='raid');
     if(decided){ Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,'This raid is decided','#bff0a0'); }   /* v59: the pill posted guards for the NEXT raid after this one was decided (Nadia) */
     else if(enough){ Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,'Guards hold it already','#bff0a0'); }   /* 40 taps posted 6 guards and emptied Build (v57, Nadia) */
-    else if(canAddTo('guard')){ const n=postGuards()||0; try{ firstAction('guard'); }catch(e){} Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,n>1?n+' guards posted!':'Guard posted!','#bff0a0'); }   // v59: one tap posts what the raid needs else { Sfx.play('buzz'); fxText(q.x+q.w/2,q.y+q.h,'Nobody free to guard'); }
+    else if(canAddTo('guard')){ const n=postGuards()||0; try{ firstAction('guard'); }catch(e){} Sfx.play('click'); fxText(q.x+q.w/2,q.y+q.h,n>1?n+' guards posted!':'Guard posted!','#bff0a0'); }   /* v59: one tap posts what the raid needs */
+    else { Sfx.play('buzz'); fxText(q.x+q.w/2,q.y+q.h,'Nobody free to guard'); }   /* 0.43.0: this else sat inside the comment above since 0.42.0, so a tap with nobody free did nothing (the new comment scan found it) */
     dirty=true; return true; } }
   const pend=g.pending&&g.pending.type==='raid'?g.pending:null, ev=pend?null:g.events.find(e=>e.type==='raid'&&e.loss), tgt=pend||ev;
   if(!tgt||!rivalRects.length)return false;
@@ -2768,10 +2850,10 @@ function quickBuild(x,y){
 // The passive player. Round fifteen: hands-off for 60-115 s, the guide text never changed, nothing
 // escalated, and 0 of 60 such runs won (Marcus, Priya, Sofia). Seconds of PLAY (pause and menus do not
 // count) since this page load, while only the pre-built section stands on river 1.
-const HINT_AT=6, HINT_OPEN_AT=15, AUTO_BUILD_AT=20, AUTO_BUILD_NEXT=17; let hintClock=0, hintOpened=false, hintAt=null, hintGlow=false, helpHintAt=null, playSecs=0, helpClock=0;
+const HINT_AT=6, HINT_OPEN_AT=15, AUTO_BUILD_AT=20, AUTO_BUILD_NEXT=17, FIRST_AUTO_AT=35, FIRST_BUILD=1; let hintClock=0, hintOpened=false, hintAt=null, hintGlow=false, helpHintAt=null, playSecs=0, helpClock=0;
 // 20 s before the clan lays the first wall for a passive player (was 10), 12 s between walls after: the clan beat the player to
 // every wall and river 1 won itself at 45 s (crisis round, review/v54). A passive player still wins, at ~90 s.
-function autoBuildAt(){ return g.sections.length<=1?AUTO_BUILD_AT:AUTO_BUILD_NEXT; }
+function autoBuildAt(){ if(firstDam())return FIRST_AUTO_AT; return g.sections.length<=1?AUTO_BUILD_AT:AUTO_BUILD_NEXT; }   /* 0.43.0: on the first river the dam is the player's to build; the clan steps in after 35 s of no building */
 const TOMORROW_AT=180;   // tomorrow is set up only after minute three of play (WP4)
 // 0.36.1: the clan builds without you. A player who has not tapped for AUTO_BUILD_AT seconds of play watches a builder
 // start the next wall from the clan's own wood, and the clock restarts (addSection resets it). It replaces the 15 s
@@ -2997,7 +3079,7 @@ function settingsHtml(){
       '<p class="row">'+(Ads.isPremium()?'':(Ads.canBuy()?'<button onclick="Ads.buyPremium()">Remove ads · '+Ads.priceText()+'</button>':'')+'<button class="small" onclick="Ads.restore()">Restore purchase</button>')+(Ads.canEditConsent()?'<button class="small" onclick="Ads.editConsent()">Ad privacy choices</button>':'')+'</p>')+
     '<h2>Game</h2><p class="row"><button class="small" onclick="rerollClan()">Rename clan ('+(g.clan||'')+')</button><button class="small" onclick="showSettings=false;g.seenHelp=false;dirty=true">How to play</button><button class="small" onclick="ask(&quot;This colony and its save are gone for good.&quot;,function(){newGame();g.seenHelp=true;showSettings=false;dirty=true;},&quot;Start a new clan&quot;)">New clan</button></p>'+
     '<h2>About</h2><p class="note"><span id="ver" onclick="verTap()">Dam Clan version '+VERSION+'</span>. Made by Prism Bear Group Ltd, Berkhamsted, England. '+(PORTAL==='crazygames'?'Progress saves to your CrazyGames account when you are signed in, and to this browser otherwise.':'Progress autosaves '+(window.Native?'on this device':'in this browser')+'; nothing leaves it except anonymous play statistics and ad requests.')+'</p>'+
-    (Portal.cg||Portal.gd?'<p class="note"><a href="'+PRIVACY_URL+'" target="_blank">Privacy policy</a></p>'   /* CrazyGames and GameDistribution: no links out of the game but the privacy policy (WP17) */
+    (Portal.pg?'':Portal.cg||Portal.gd?'<p class="note"><a href="'+PRIVACY_URL+'" target="_blank">Privacy policy</a></p>'   /* CrazyGames and GameDistribution: no links out of the game but the privacy policy (WP17) */
       :'<p class="note">Stuck, found a bug, or want to say hello: <a href="mailto:'+SUPPORT_EMAIL+'?subject=Dam%20Clan%20'+VERSION+'" target="_blank">'+SUPPORT_EMAIL+'</a><br>'+(PORTAL?'':'<a href="'+SITE_URL+'" target="_blank">damclan.prismbeargroup.com</a> · ')+'<a href="'+PRIVACY_URL+'" target="_blank">Privacy policy</a></p>')+
     '<div class="btns"><button class="primary" id="btn-start">Back to the river</button></div></div>';
 }
@@ -3910,7 +3992,7 @@ function render(t){
       const pl=rr*0.5; ctx.strokeStyle='#fff3da'; ctx.lineWidth=Math.max(3,rr*0.2); ctx.lineCap='round';
       ctx.beginPath(); ctx.moveTo(cx-pl,cy); ctx.lineTo(cx+pl,cy); ctx.moveTo(cx,cy-pl); ctx.lineTo(cx,cy+pl); ctx.stroke(); ctx.lineCap='butt';
       // A player who has not built anything by HINT_AT seconds of play gets a bubble and a bouncing pointer over the +.
-      hintAt=(hintWanted()&&hintClock>=HINT_AT)?[cx,cy-rr-6]:null; }
+      hintAt=(hintWanted()&&hintClock>=(firstDam()&&COHORT==='a'?3:HINT_AT))?[cx,cy-rr-6]:null; if(hintAt&&firstDam())try{ Track.once('help_cue',{v2:COHORT,s:Math.round(hintClock)}); }catch(e){} }
     else hintAt=null;
     // once every gap is filled the bubble moves to the wall, until the player has helped once (crisis round)
     helpHintAt=(g.river===0&&!g.damsBuilt&&helpable()&&(g.helps||0)<1&&!g.complete&&helpClock>=3)?[(dl+dr)/2,(damAt?damAt(0.5):damY)-Math.max(70*G.ss,66)-6]:null;
@@ -4248,7 +4330,7 @@ function frame(now){
 Ads.init();
 // CrazyGames: the SDK's Data module is the save store for logged-in players, and it is only there once the SDK has
 // initialised, so the clock waits for it (or 4 s) and the save is re-read from it before the first day ticks.
-let portalHold=!!(PORTAL==='crazygames'||PORTAL==='gamedistribution');   // GD too (WP17): the splash comes down and the pre-roll arms only once the SDK has answered or 4 s have passed
+let portalHold=!!(PORTAL==='crazygames'||PORTAL==='gamedistribution'||PORTAL==='playgama');   // GD too (WP17): the splash comes down and the pre-roll arms only once the SDK has answered or 4 s have passed
 // Preferences are read at parse time, long before the SDK can be up. Once the store is settled they are
 // re-read from it, otherwise a logged-in player's settings would read from one store and write to another.
 function reloadPrefs(){ try{
@@ -4258,9 +4340,10 @@ function reloadPrefs(){ try{
     noFlash=LS.getItem('damclan-noflash')==='1';
     toastsOn=LS.getItem('damclan-toasts')==='1';
   }catch(e){} }
-if(portalHold)Portal.init().then(()=>crewReady(1200)).then(()=>{ Portal.migrate(); LS.lock(); if(Portal.cg&&Portal.ready&&Portal.sdk.data&&!load())newGame(); awayReport=catchUp(); try{ dailyGift(); }catch(e){ console.error('dailyGift',e); } reloadPrefs(); portalHold=false; Portal.loaded(); if(window.__cgDone)window.__cgDone(); dirty=true; });
+if(portalHold)Portal.init().then(()=>crewReady(1200)).then(()=>{ Portal.migrate(); LS.lock(); if((Portal.cg&&Portal.ready&&Portal.sdk.data||Portal.pg&&Portal.pgStore)&&!load())newGame(); awayReport=catchUp(); try{ dailyGift(); }catch(e){ console.error('dailyGift',e); } reloadPrefs(); portalHold=false; Portal.loaded(); if(window.__cgDone)window.__cgDone(); dirty=true; });
 else LS.lock();
 if(!load())newGame();
+try{ Track.start(); }catch(e){}   /* our telemetry: session_start, the day visit, the alive clock, quit and bye */
 if(loadNote)log(loadNote,'warn');
 // On a portal build the SDK save replaces this colony when it arrives, so catch-up waits for it (in
 // the then above): run here, it played 60 days on the localStorage colony and then showed that card
